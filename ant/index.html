@@ -1,0 +1,555 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Муравей Лэнгтона</title>
+<style>
+  * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: #eceef2;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+    padding: 8px;
+  }
+
+  .phone-frame {
+    position: relative;
+    width: min(96vw, 96vh * 9 / 16);
+    max-width: 460px;
+    padding-top: calc(min(96vw, 96vh * 9 / 16) * 16 / 9);
+    max-height: 98vh;
+    background: linear-gradient(160deg, #ffffff 0%, #f0f1f5 60%, #e4e6ec 100%);
+    border-radius: 36px;
+    box-shadow:
+      0 0 0 1px rgba(120, 125, 140, 0.25),
+      0 24px 45px rgba(60, 65, 85, 0.18),
+      0 10px 20px rgba(60, 65, 85, 0.10);
+    overflow: hidden;
+  }
+  .phone-inner {
+    position: absolute;
+    top: 12px; left: 12px; right: 12px; bottom: 12px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .screen {
+    flex: 1;
+    border-radius: 24px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: #fdfbf3;
+    min-height: 0;
+    box-shadow: 0 0 0 1px rgba(120, 125, 140, 0.25);
+  }
+
+  .stage-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    min-height: 0;
+    min-width: 0;
+    position: relative;
+  }
+
+  .stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .stage svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Плашки — снова сверху, но компактные */
+  .step-overlay {
+    position: absolute;
+    top: 6px;
+    left: 8px;
+    background: rgba(46, 42, 61, 0.85);
+    color: #b8f0b8;
+    font-size: .68rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 8px;
+    box-shadow: 0 3px 8px rgba(0,0,0,.2);
+    pointer-events: none;
+    z-index: 10;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    letter-spacing: .2px;
+  }
+
+  .state-overlay {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    background: rgba(46, 42, 61, 0.85);
+    color: #ffd966;
+    font-size: .64rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 8px;
+    box-shadow: 0 3px 8px rgba(0,0,0,.2);
+    pointer-events: none;
+    z-index: 10;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    letter-spacing: .2px;
+    transition: background .3s, color .3s;
+  }
+  .state-overlay.highway {
+    background: rgba(74, 158, 82, 0.9);
+    color: #ffffff;
+  }
+
+  .controls {
+    background: linear-gradient(180deg, #ffffff, #eef0f4);
+    padding: 8px 10px 10px;
+    border-radius: 0 0 24px 24px;
+    display: flex; flex-direction: column; gap: 5px;
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
+  }
+
+  .row {
+    display: flex; justify-content: space-between; align-items: center;
+    color: #4a4a5a; font-size: .78rem; font-weight: 600;
+    gap: 8px;
+  }
+  .pill {
+    background: #ffffff; padding: 4px 11px; border-radius: 30px;
+    color: #2e2a3d; font-weight: 700; font-size: .68rem;
+    white-space: nowrap;
+    max-width: 78%;
+    overflow: hidden; text-overflow: ellipsis;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  .pill.count {
+    background: #e6f5e6; color: #2e6b34;
+    flex-shrink: 0;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 8px;
+    border-radius: 10px; background: #d8dae0;
+    outline: none;
+    cursor: pointer;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.1);
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #ffffff, #e8d49d);
+    border: 1px solid #b28b4f;
+    cursor: pointer;
+    box-shadow: 0 3px 6px rgba(0,0,0,.22);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: linear-gradient(145deg, #ffffff, #e8d49d);
+    border: 1px solid #b28b4f; cursor: pointer;
+  }
+
+  .presets {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+  }
+  .preset {
+    background: #ffffff;
+    border: 2px solid transparent;
+    padding: 5px 3px;
+    border-radius: 10px;
+    font-size: .62rem;
+    font-weight: 700;
+    color: #4a4a5a;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,.06);
+    transition: border-color .15s, background .15s;
+  }
+  .preset:hover { background: #f8f8fb; }
+  .preset.active {
+    border-color: #4a9e52;
+    background: #e6f5e6;
+    color: #2e6b34;
+  }
+
+  .btn-row { display: flex; align-items: center; gap: 5px; width: 100%; }
+  .btn {
+    flex: 0 0 auto;
+    background: #ffffff; color: #2e2a3d;
+    border: none; border-radius: 30px;
+    padding: 7px 8px;
+    font-size: .7rem; font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    box-shadow: 0 2px 0 #d0d2d8, 0 3px 8px rgba(0,0,0,.08);
+    transition: background .15s, transform .08s;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn.play {
+    background: linear-gradient(180deg, #4aa354, #2e6b34);
+    color: #ffffff; width: 72px;
+  }
+  .btn.step {
+    background: linear-gradient(180deg, #6fa8dc, #3d7eb8);
+    color: #ffffff; width: 56px;
+  }
+  .btn.reset {
+    background: linear-gradient(180deg, #c98070, #a0523a);
+    color: #ffffff; width: 58px;
+  }
+  .speed-box {
+    display: flex; align-items: center; gap: 3px;
+    background: #ffffff; padding: 3px 7px;
+    border-radius: 30px; flex: 1 1 auto;
+    justify-content: center; min-width: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  .speed-box label { color: #8a8a9a; font-size: .64rem; font-weight: 700; }
+  .speed-box input[type=number] {
+    width: 42px;
+    background: #f4f5f7; color: #2e6b34;
+    border: 1px solid #d8dae0; border-radius: 8px;
+    padding: 2px 3px; font-size: .68rem; font-weight: 700;
+    text-align: center; outline: none;
+    font-family: inherit;
+  }
+  .speed-box span { color: #8a8a9a; font-size: .64rem; font-weight: 600; }
+
+  .hint {
+    color: #8a8a9a; font-size: .62rem; text-align: center;
+    line-height: 1.2;
+  }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="phone-inner">
+    <div class="screen">
+      <div class="stage-wrap">
+        <div class="stage">
+          <svg id="scene" viewBox="-200 -200 400 400" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+        <div class="step-overlay" id="stepOverlay">Шаг 0</div>
+        <div class="state-overlay" id="stateOverlay">Хаос</div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="row">
+        <span class="pill" id="stepLabel">Правило RL</span>
+        <span class="pill count" id="blackLabel">0 чёрных</span>
+      </div>
+      <input type="range" id="slider" min="0" max="100" value="0" step="0.1">
+      <div class="presets" id="presets">
+        <div class="preset" data-preset="center">Центр</div>
+        <div class="preset active" data-preset="corner">Угол (↖)</div>
+        <div class="preset" data-preset="random">Случайно</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn play"  id="playBtn">▶ Пуск</button>
+        <button class="btn step"  id="stepBtn">Шаг</button>
+        <button class="btn reset" id="resetBtn">↺ Сброс</button>
+        <div class="speed-box">
+          <label>⏱</label>
+          <input type="number" id="speedInput" min="10" max="2000" value="200" step="10">
+          <span>ш/с</span>
+        </div>
+      </div>
+      <div class="hint" id="hint">Белая → направо · Чёрная → налево</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const svg = document.getElementById('scene');
+  const NS = 'http://www.w3.org/2000/svg';
+
+  const GRID_CELL = 5;
+  const MAX_STEPS = 20000;
+
+  let blackCells = new Map();
+  let antX = 0, antY = 0;
+  let antDir = 0;
+  let stepCount = 0;
+  let actions = [];
+  let currentPreset = 'corner';
+
+  function el(tag, attrs){
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  const layerBlack = el('g', {});
+  svg.appendChild(layerBlack);
+
+  const antCellHighlight = el('rect', {
+    x: 0, y: 0, width: GRID_CELL, height: GRID_CELL,
+    fill: 'rgba(255, 220, 100, 0.35)',
+    stroke: 'none',
+  });
+  svg.appendChild(antCellHighlight);
+
+  const antGroup = el('g', {});
+  const antTri = el('polygon', {
+    points: '0,-6 5,5 -5,5',
+    fill: '#d9a640',
+    stroke: '#8b6914',
+    'stroke-width': 1,
+    'stroke-linejoin': 'round',
+  });
+  antGroup.appendChild(antTri);
+  svg.appendChild(antGroup);
+
+  const antCellRect = el('rect', {
+    x: 0, y: 0, width: GRID_CELL, height: GRID_CELL,
+    fill: 'none', stroke: '#8b6914', 'stroke-width': 1.2,
+    'stroke-dasharray': '2 1.5',
+  });
+  svg.appendChild(antCellRect);
+
+  const cellEls = new Map();
+
+  function addBlackCell(x, y){
+    if (cellEls.has(`${x},${y}`)) return;
+    const rect = el('rect', {
+      x: x * GRID_CELL,
+      y: y * GRID_CELL,
+      width: GRID_CELL,
+      height: GRID_CELL,
+      fill: '#2e2a3d',
+    });
+    layerBlack.appendChild(rect);
+    cellEls.set(`${x},${y}`, rect);
+  }
+
+  function removeBlackCell(x, y){
+    const key = `${x},${y}`;
+    const el = cellEls.get(key);
+    if (el){
+      el.remove();
+      cellEls.delete(key);
+    }
+  }
+
+  function drawAnt(){
+    const ax = antX * GRID_CELL + GRID_CELL / 2;
+    const ay = antY * GRID_CELL + GRID_CELL / 2;
+    antGroup.setAttribute('transform', `translate(${ax}, ${ay}) rotate(${antDir * 90})`);
+    antCellRect.setAttribute('x', antX * GRID_CELL);
+    antCellRect.setAttribute('y', antY * GRID_CELL);
+    antCellHighlight.setAttribute('x', antX * GRID_CELL);
+    antCellHighlight.setAttribute('y', antY * GRID_CELL);
+  }
+
+  function makeStepWithHistory(){
+    const key = `${antX},${antY}`;
+    const isBlack = blackCells.has(key);
+
+    const action = {
+      x: antX, y: antY,
+      prevBlack: isBlack,
+      antX, antY, antDir,
+    };
+
+    if (isBlack){
+      antDir = (antDir + 3) % 4;
+      blackCells.delete(key);
+      removeBlackCell(antX, antY);
+    } else {
+      antDir = (antDir + 1) % 4;
+      blackCells.set(key, 1);
+      addBlackCell(antX, antY);
+    }
+
+    if (antDir === 0) antY -= 1;
+    else if (antDir === 1) antX += 1;
+    else if (antDir === 2) antY += 1;
+    else antX -= 1;
+
+    stepCount++;
+    actions.push(action);
+    drawAnt();
+    updateUI();
+  }
+
+  function stepBack(){
+    if (actions.length === 0) return;
+    const a = actions.pop();
+    antX = a.antX;
+    antY = a.antY;
+    antDir = a.antDir;
+    if (a.prevBlack){
+      blackCells.set(`${a.x},${a.y}`, 1);
+      addBlackCell(a.x, a.y);
+    } else {
+      blackCells.delete(`${a.x},${a.y}`);
+      removeBlackCell(a.x, a.y);
+    }
+    stepCount--;
+    drawAnt();
+    updateUI();
+  }
+
+  function stepForward(){
+    if (stepCount >= MAX_STEPS) return;
+    makeStepWithHistory();
+  }
+
+  function reset(preset){
+    if (preset) currentPreset = preset;
+
+    blackCells.clear();
+    cellEls.forEach(el => el.remove());
+    cellEls.clear();
+    layerBlack.innerHTML = '';
+    actions = [];
+    stepCount = 0;
+
+    if (currentPreset === 'center'){
+      antX = 0; antY = 0;
+      antDir = 0;
+    } else if (currentPreset === 'corner'){
+      // Отступ от верхнего правого угла, направление ВЛЕВО
+      // Старт ниже плашек, чтобы муравей не оказался под ними
+      antX = 20;
+      antY = -25;
+      antDir = 3;
+    } else if (currentPreset === 'random'){
+      antX = Math.floor(Math.random() * 20) - 10;
+      antY = Math.floor(Math.random() * 20) - 10;
+      antDir = Math.floor(Math.random() * 4);
+    }
+
+    drawAnt();
+    updateUI();
+
+    document.querySelectorAll('.preset').forEach(el => {
+      el.classList.toggle('active', el.dataset.preset === currentPreset);
+    });
+    slider.value = 0;
+  }
+
+  const stepOverlay = document.getElementById('stepOverlay');
+  const stateOverlay = document.getElementById('stateOverlay');
+  const stepLabel = document.getElementById('stepLabel');
+  const blackLabel = document.getElementById('blackLabel');
+  const slider = document.getElementById('slider');
+
+  function updateUI(){
+    stepOverlay.textContent = 'Шаг ' + stepCount;
+    blackLabel.textContent = blackCells.size + ' чёрных';
+    stepLabel.textContent = 'Правило RL';
+
+    if (stepCount >= 10000){
+      stateOverlay.textContent = '🛣 Дорога';
+      stateOverlay.classList.add('highway');
+    } else {
+      stateOverlay.textContent = '🌀 Хаос';
+      stateOverlay.classList.remove('highway');
+    }
+
+    slider.max = MAX_STEPS;
+    slider.value = stepCount;
+  }
+
+  slider.addEventListener('input', () => {
+    const target = parseInt(slider.value);
+    while (stepCount > target && actions.length > 0){
+      stepBack();
+    }
+    while (stepCount < target && stepCount < MAX_STEPS){
+      stepForward();
+    }
+  });
+
+  const playBtn = document.getElementById('playBtn');
+  const stepBtn = document.getElementById('stepBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const speedInput = document.getElementById('speedInput');
+
+  let intervalId = null;
+
+  function startPlay(){
+    if (intervalId !== null) return;
+    const stepsPerSec = Math.max(10, Math.min(2000, parseInt(speedInput.value) || 200));
+    const batch = Math.max(1, Math.round(stepsPerSec / 60));
+    const ms = Math.max(16, 1000 / Math.min(stepsPerSec, 60));
+    intervalId = setInterval(() => {
+      for (let i = 0; i < batch; i++){
+        if (stepCount >= MAX_STEPS){
+          stopPlay();
+          return;
+        }
+        stepForward();
+      }
+    }, ms);
+    playBtn.textContent = '❚❚ Пауза';
+  }
+
+  function stopPlay(){
+    if (intervalId !== null){
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+    playBtn.textContent = '▶ Пуск';
+  }
+
+  playBtn.addEventListener('click', () => {
+    if (intervalId !== null) stopPlay();
+    else startPlay();
+  });
+
+  stepBtn.addEventListener('click', () => {
+    stopPlay();
+    if (stepCount < MAX_STEPS){
+      stepForward();
+    }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    stopPlay();
+    reset();
+  });
+
+  speedInput.addEventListener('input', () => {
+    if (intervalId !== null){
+      stopPlay();
+      startPlay();
+    }
+  });
+
+  document.querySelectorAll('.preset').forEach(el => {
+    el.addEventListener('click', () => {
+      stopPlay();
+      reset(el.dataset.preset);
+    });
+  });
+
+  reset('corner');
+
+})();
+</script>
+</body>
+</html>
