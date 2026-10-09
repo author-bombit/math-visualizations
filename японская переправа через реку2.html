@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Японская переправа через реку</title>
+<style>
+  * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: #eceef2;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+    padding: 8px;
+    gap: 24px;
+  }
+
+  .phone-frame {
+    position: relative;
+    width: min(96vw, 96vh * 9 / 16);
+    max-width: 460px;
+    padding-top: calc(min(96vw, 96vh * 9 / 16) * 16 / 9);
+    max-height: 98vh;
+    background: linear-gradient(160deg, #ffffff 0%, #f0f1f5 60%, #e4e6ec 100%);
+    border-radius: 36px;
+    box-shadow:
+      0 0 0 1px rgba(120, 125, 140, 0.25),
+      0 24px 45px rgba(60, 65, 85, 0.18),
+      0 10px 20px rgba(60, 65, 85, 0.10);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .phone-inner {
+    position: absolute;
+    top: 12px; left: 12px; right: 12px; bottom: 12px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .screen {
+    flex: 1;
+    border-radius: 24px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: #fdfbf3;
+    min-height: 0;
+    box-shadow: 0 0 0 1px rgba(120, 125, 140, 0.25);
+  }
+
+  .stage-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    min-height: 0;
+    min-width: 0;
+    position: relative;
+  }
+
+  .stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .stage svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+  }
+
+  .stat-overlay {
+    position: absolute;
+    top: 6px;
+    left: 8px;
+    background: rgba(46, 42, 61, 0.85);
+    color: #b8f0b8;
+    font-size: .68rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 8px;
+    box-shadow: 0 3px 8px rgba(0,0,0,.2);
+    pointer-events: none;
+    z-index: 10;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+  }
+
+  .verdict-overlay {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    background: rgba(46, 42, 61, 0.85);
+    color: #ffd966;
+    font-size: .68rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 8px;
+    box-shadow: 0 3px 8px rgba(0,0,0,.2);
+    pointer-events: none;
+    z-index: 10;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    transition: background .3s, color .3s;
+    max-width: 62%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .verdict-overlay.error {
+    background: rgba(192, 57, 43, 0.95);
+    color: #ffffff;
+  }
+  .verdict-overlay.success {
+    background: rgba(74, 158, 82, 0.95);
+    color: #ffffff;
+  }
+
+  .controls {
+    background: linear-gradient(180deg, #ffffff, #eef0f4);
+    padding: 8px 10px 10px;
+    border-radius: 0 0 24px 24px;
+    display: flex; flex-direction: column; gap: 5px;
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
+  }
+
+  .row {
+    display: flex; justify-content: space-between; align-items: center;
+    color: #4a4a5a; font-size: .78rem; font-weight: 600;
+    gap: 8px;
+  }
+  .pill {
+    background: #ffffff; padding: 4px 11px; border-radius: 30px;
+    color: #2e2a3d; font-weight: 700; font-size: .68rem;
+    white-space: nowrap;
+    max-width: 78%;
+    overflow: hidden; text-overflow: ellipsis;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  .pill.count {
+    background: #e6f5e6; color: #2e6b34;
+    flex-shrink: 0;
+    font-size: .62rem;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 8px;
+    border-radius: 10px; background: #d8dae0;
+    outline: none;
+    cursor: pointer;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.1);
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #ffffff, #e8d49d);
+    border: 1px solid #b28b4f;
+    cursor: pointer;
+    box-shadow: 0 3px 6px rgba(0,0,0,.22);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: linear-gradient(145deg, #ffffff, #e8d49d);
+    border: 1px solid #b28b4f; cursor: pointer;
+  }
+
+  .btn-row { display: flex; align-items: center; gap: 5px; width: 100%; }
+  .btn {
+    flex: 0 0 auto;
+    background: #ffffff; color: #2e2a3d;
+    border: none; border-radius: 30px;
+    padding: 7px 8px;
+    font-size: .68rem; font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    box-shadow: 0 2px 0 #d0d2d8, 0 3px 8px rgba(0,0,0,.08);
+    transition: background .15s, transform .08s;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn.hint {
+    background: linear-gradient(180deg, #f0c25a, #d9a640);
+    color: #4a3a10; flex: 1 1 auto;
+  }
+  .btn.auto {
+    background: linear-gradient(180deg, #4aa354, #2e6b34);
+    color: #ffffff; flex: 1 1 auto;
+  }
+  .btn.reset {
+    background: linear-gradient(180deg, #c98070, #a0523a);
+    color: #ffffff; width: 58px;
+  }
+
+  .hint {
+    color: #8a8a9a; font-size: .62rem; text-align: center;
+    line-height: 1.3;
+  }
+
+  .side-panel {
+    width: 340px;
+    max-height: 96vh;
+    background: linear-gradient(180deg, #ffffff, #f5f6f8);
+    border-radius: 24px;
+    padding: 18px 20px;
+    box-shadow:
+      0 0 0 1px rgba(120, 125, 140, 0.2),
+      0 16px 32px rgba(60, 65, 85, 0.12),
+      0 4px 10px rgba(60, 65, 85, 0.06);
+    overflow-y: auto;
+    font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+    color: #2e2a3d;
+    flex-shrink: 0;
+    scrollbar-width: thin;
+    scrollbar-color: #c8d6e8 transparent;
+  }
+  .side-panel::-webkit-scrollbar { width: 6px; }
+  .side-panel::-webkit-scrollbar-thumb {
+    background: #c8d6e8;
+    border-radius: 3px;
+  }
+
+  .panel-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin: 0 0 4px 0;
+    color: #1a1825;
+    letter-spacing: -0.2px;
+  }
+  .panel-subtitle {
+    font-size: .78rem;
+    color: #8a8a9a;
+    margin: 0 0 16px 0;
+    line-height: 1.4;
+  }
+
+  .panel-section {
+    margin-bottom: 18px;
+  }
+  .panel-section h3 {
+    font-size: .72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #4a9e52;
+    margin: 0 0 8px 0;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .rule-item {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 7px;
+    font-size: .78rem;
+    line-height: 1.45;
+    color: #3a3a4a;
+  }
+  .rule-num {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    background: #e6f5e6;
+    color: #2e6b34;
+    border-radius: 50%;
+    font-size: .65rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+
+  .char-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .char-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #f8f9fb;
+    padding: 5px 8px;
+    border-radius: 8px;
+    font-size: .72rem;
+    font-weight: 600;
+    color: #3a3a4a;
+  }
+  .char-item .emoji {
+    font-size: 1rem;
+    line-height: 1;
+  }
+  .char-item.driver {
+    background: #fff8e8;
+    border: 1px solid #f0d488;
+  }
+  .char-item .driver-mark {
+    color: #d9a640;
+    font-weight: 800;
+    font-size: .65rem;
+    margin-left: auto;
+  }
+
+  .control-item {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: .76rem;
+    line-height: 1.4;
+    color: #3a3a4a;
+  }
+  .control-icon {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .9rem;
+    background: #eef4f8;
+  }
+  .control-icon.yellow { background: #fdf3d8; }
+  .control-icon.green { background: #e6f5e6; }
+  .control-icon.red { background: #f8e0e0; }
+
+  .control-item b {
+    color: #1a1825;
+    font-weight: 700;
+  }
+
+  .divider {
+    height: 1px;
+    background: #e2e8f0;
+    margin: 14px 0;
+  }
+
+  .tip-box {
+    background: #fff8e8;
+    border-left: 3px solid #d9a640;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: .72rem;
+    line-height: 1.45;
+    color: #5a4a2a;
+    margin-top: 6px;
+  }
+  .tip-box b { color: #8b6914; }
+
+  @media (max-width: 900px) {
+    body { gap: 8px; }
+    .side-panel { display: none; }
+  }
+  @media (max-height: 700px) and (max-width: 1100px) {
+    .side-panel { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="phone-inner">
+    <div class="screen">
+      <div class="stage-wrap">
+        <div class="stage">
+          <svg id="scene" viewBox="-200 -200 400 400" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+        <div class="stat-overlay" id="statOverlay">Ход 0 / 17</div>
+        <div class="verdict-overlay" id="verdictOverlay">Всё в порядке</div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="row">
+        <span class="pill" id="stepLabel">Тапните персонажа, чтобы посадить на плот</span>
+        <span class="pill count" id="totalLabel">8 слева</span>
+      </div>
+      <input type="range" id="slider" min="0" max="17" value="0" step="1">
+      <div class="btn-row">
+        <button class="btn hint"  id="hintBtn">💡 Подсказка</button>
+        <button class="btn auto"  id="autoBtn">▶ Авто</button>
+        <button class="btn reset" id="resetBtn">↺ Сброс</button>
+      </div>
+      <div class="hint" id="hint">Отец, мать и полицейский умеют управлять плотом</div>
+    </div>
+  </div>
+</div>
+
+<aside class="side-panel">
+  <h2 class="panel-title">🚣 Японская переправа</h2>
+  <p class="panel-subtitle">
+    8 персонажей должны перебраться через реку на плоту,
+    вмещающем максимум 2 человек. Соблюдайте 5 правил!
+  </p>
+
+  <!-- ========== ПРАВИЛА (были ниже, теперь первые) ========== -->
+  <div class="panel-section">
+    <h3>📜 Правила</h3>
+
+    <div class="rule-item">
+      <span class="rule-num">1</span>
+      <span>Плот вмещает <b>максимум 2 человек</b>.</span>
+    </div>
+    <div class="rule-item">
+      <span class="rule-num">2</span>
+      <span><b>Отец</b> не может оставаться с <b>дочерьми</b> без матери.</span>
+    </div>
+    <div class="rule-item">
+      <span class="rule-num">3</span>
+      <span><b>Мать</b> не может оставаться с <b>сыновьями</b> без отца.</span>
+    </div>
+    <div class="rule-item">
+      <span class="rule-num">4</span>
+      <span><b>Вор</b> не может оставаться с членами семьи без полицейского.</span>
+    </div>
+    <div class="rule-item">
+      <span class="rule-num">5</span>
+      <span>Плотом управляют только <b>отец</b>, <b>мать</b> и <b>полицейский</b>.</span>
+    </div>
+
+    <div class="tip-box">
+      <b>💡</b> Проверка идёт после каждого хода — на обоих берегах.
+      Нарушение → красная плашка.
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ========== ПЕРСОНАЖИ (были выше, теперь вторые) ========== -->
+  <div class="panel-section">
+    <h3>👥 Персонажи</h3>
+    <div class="char-list">
+      <div class="char-item driver">👮 Пол <span class="driver-mark">🚣</span></div>
+      <div class="char-item">🦹 Вор</div>
+      <div class="char-item driver">👨 Отец <span class="driver-mark">🚣</span></div>
+      <div class="char-item driver">👩 Мать <span class="driver-mark">🚣</span></div>
+      <div class="char-item">👦 Сын 1</div>
+      <div class="char-item">👦 Сын 2</div>
+      <div class="char-item">👧 Дочь 1</div>
+      <div class="char-item">👧 Дочь 2</div>
+    </div>
+    <div class="tip-box">
+      <b>🚣</b> — умеет управлять плотом. Без такого персонажа плот не поедет.
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="panel-section">
+    <h3>🎮 Управление</h3>
+
+    <div class="control-item">
+      <span class="control-icon">👆</span>
+      <span><b>Тап по персонажу</b> — посадить на плот (если он на том же берегу) или снять с плота.</span>
+    </div>
+    <div class="control-item">
+      <span class="control-icon">🛶</span>
+      <span><b>Тап по плоту</b> — переправа. Нужен хотя бы один «водитель» на борту.</span>
+    </div>
+    <div class="control-item">
+      <span class="control-icon yellow">💡</span>
+      <span><b>Подсказка</b> — сделает следующий правильный ход из решения (17 ходов).</span>
+    </div>
+    <div class="control-item">
+      <span class="control-icon green">▶</span>
+      <span><b>Авто</b> — проиграет всё решение целиком, ход за ходом. Повторное нажатие — пауза.</span>
+    </div>
+    <div class="control-item">
+      <span class="control-icon red">↺</span>
+      <span><b>Сброс</b> — вернуть всех на левый берег и обнулить ходы.</span>
+    </div>
+    <div class="control-item">
+      <span class="control-icon">🎚️</span>
+      <span><b>Ползунок</b> — показывает прогресс (ходы 0–17).</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="panel-section">
+    <h3>🏆 Решение</h3>
+    <div class="rule-item">
+      <span class="rule-num">✓</span>
+      <span>Минимальное решение — <b>17 ходов</b>: 9 рейсов туда и 8 обратно.</span>
+    </div>
+  </div>
+</aside>
+
+<script>
+(function(){
+  const svg = document.getElementById('scene');
+  const NS = 'http://www.w3.org/2000/svg';
+
+  const CHARACTERS = [
+    { id: 'police', emoji: '👮', name: 'Пол', role: 'police',    canDrive: true },
+    { id: 'thief',  emoji: '🦹', name: 'Вор', role: 'thief',     canDrive: false },
+    { id: 'father', emoji: '👨', name: 'Отец', role: 'father',   canDrive: true },
+    { id: 'mother', emoji: '👩', name: 'Мать', role: 'mother',   canDrive: true },
+    { id: 'son1',   emoji: '👦', name: 'Сын1', role: 'son',      canDrive: false },
+    { id: 'son2',   emoji: '👦', name: 'Сын2', role: 'son',      canDrive: false },
+    { id: 'dau1',   emoji: '👧', name: 'Дочь1', role: 'daughter', canDrive: false },
+    { id: 'dau2',   emoji: '👧', name: 'Дочь2', role: 'daughter', canDrive: false },
+  ];
+
+  const SOLUTION = [
+    ['police', 'thief'],
+    ['police'],
+    ['police', 'son1'],
+    ['police', 'thief'],
+    ['father', 'son2'],
+    ['father'],
+    ['father', 'mother'],
+    ['mother'],
+    ['police', 'thief'],
+    ['father'],
+    ['father', 'mother'],
+    ['mother'],
+    ['mother', 'dau1'],
+    ['police', 'thief'],
+    ['police', 'dau2'],
+    ['police'],
+    ['police', 'thief'],
+  ];
+
+  let positions = {};
+  let raftSide = 'left';
+  let raftOccupants = [];
+  let moveIndex = 0;
+  let hasError = false;
+  let isAnimating = false;
+
+  function resetState(){
+    positions = {};
+    CHARACTERS.forEach(c => { positions[c.id] = 'left'; });
+    raftSide = 'left';
+    raftOccupants = [];
+    moveIndex = 0;
+    hasError = false;
+  }
+
+  function checkRules(){
+    for (const side of ['left', 'right']){
+      const ids = CHARACTERS
+        .filter(c => positions[c.id] === side)
+        .map(c => c.id);
+
+      const hasFather = ids.includes('father');
+      const hasMother = ids.includes('mother');
+      const hasPolice = ids.includes('police');
+      const hasThief  = ids.includes('thief');
+      const sons      = ids.filter(id => id.startsWith('son'));
+      const daughters = ids.filter(id => id.startsWith('dau'));
+
+      if (hasFather && !hasMother && daughters.length > 0){
+        return { ok: false, reason: 'Отец с дочерьми без матери' };
+      }
+      if (hasMother && !hasFather && sons.length > 0){
+        return { ok: false, reason: 'Мать с сыновьями без отца' };
+      }
+      if (hasThief && !hasPolice){
+        const familyWithThief = ids.filter(id =>
+          id !== 'thief' && id !== 'police'
+        );
+        if (familyWithThief.length > 0){
+          return { ok: false, reason: 'Вор с семьёй без полицейского' };
+        }
+      }
+    }
+    return { ok: true };
+  }
+
+  function el(tag, attrs){
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  svg.appendChild(el('rect', {
+    x: -200, y: -200, width: 400, height: 400,
+    fill: '#fdfbf3',
+  }));
+
+  svg.appendChild(el('rect', {
+    x: -80, y: -200, width: 160, height: 400,
+    fill: '#b8d8e8',
+  }));
+
+  for (let i = 0; i < 10; i++){
+    const wy = -180 + i * 40;
+    svg.appendChild(el('path', {
+      d: `M -70 ${wy} q 15 -6 30 0 q 15 6 30 0 q 15 -6 30 0 q 15 6 30 0`,
+      fill: 'none', stroke: '#8ab8d0', 'stroke-width': 1.2, opacity: 0.5,
+    }));
+  }
+
+  svg.appendChild(el('rect', {
+    x: -200, y: -200, width: 120, height: 400,
+    fill: '#e8e0c8',
+  }));
+  svg.appendChild(el('rect', {
+    x: 80, y: -200, width: 120, height: 400,
+    fill: '#e8e0c8',
+  }));
+
+  const layerRaft = el('g', {});
+  svg.appendChild(layerRaft);
+
+  const raftG = el('g', {
+    transform: 'translate(-55, 0)',
+  });
+
+  raftG.appendChild(el('rect', {
+    x: -30, y: -10, width: 64, height: 28,
+    rx: 5, ry: 5,
+    fill: 'rgba(0,0,0,0.12)',
+  }));
+
+  raftG.appendChild(el('rect', {
+    x: -32, y: -14, width: 64, height: 28,
+    rx: 5, ry: 5,
+    fill: '#c9a063', stroke: '#8b6914', 'stroke-width': 2,
+  }));
+
+  raftG.appendChild(el('rect', {
+    x: -30, y: -12, width: 60, height: 8,
+    rx: 4, ry: 4,
+    fill: '#e0b878',
+    opacity: 0.7,
+  }));
+
+  raftG.appendChild(el('rect', {
+    x: -30, y: 8, width: 60, height: 4,
+    rx: 2, ry: 2,
+    fill: '#a8835e',
+    opacity: 0.6,
+  }));
+
+  layerRaft.appendChild(raftG);
+
+  const layerChars = el('g', {});
+  svg.appendChild(layerChars);
+
+  function getShoreSlots(side){
+    const shoreX = side === 'left' ? -200 : 80;
+    const shoreW = 120;
+    const slots = [];
+    const rows = 4;
+    const cols = 2;
+    const startY = -110;
+    const stepY = 70;
+    const cellW = shoreW / cols;
+    for (let r = 0; r < rows; r++){
+      for (let c = 0; c < cols; c++){
+        slots.push({
+          x: shoreX + c * cellW + cellW / 2,
+          y: startY + r * stepY,
+        });
+      }
+    }
+    return slots;
+  }
+
+  const leftSlots = getShoreSlots('left');
+  const rightSlots = getShoreSlots('right');
+
+  const raftSlots = [
+    { x: -15, y: -22 },
+    { x: 15, y: -22 },
+  ];
+
+  function getRaftPosition(){
+    if (raftSide === 'left'){
+      return { x: -55, y: 0 };
+    } else {
+      return { x: 55, y: 0 };
+    }
+  }
+
+  const charEls = {};
+
+  CHARACTERS.forEach(char => {
+    const g = el('g', {});
+    g.appendChild(el('circle', {
+      cx: 0, cy: 0, r: 20,
+      fill: '#ffffff', stroke: '#a8835e', 'stroke-width': 1.5,
+    }));
+    const emojiText = el('text', {
+      x: 0, y: 6,
+      'text-anchor': 'middle',
+      'font-size': '24',
+      'font-family': 'Apple Color Emoji, Segoe UI Emoji, sans-serif',
+    });
+    emojiText.textContent = char.emoji;
+    g.appendChild(emojiText);
+    const nameText = el('text', {
+      x: 0, y: 32,
+      'text-anchor': 'middle',
+      'font-size': '10', 'font-weight': '700',
+      'font-family': 'Segoe UI, sans-serif', fill: '#4a4a5a',
+    });
+    nameText.textContent = char.name;
+    g.appendChild(nameText);
+
+    layerChars.appendChild(g);
+    charEls[char.id] = { g, char, x: 0, y: 0 };
+  });
+
+  function getCharacterTarget(id){
+    const pos = positions[id];
+
+    if (pos === 'raft'){
+      const idx = raftOccupants.indexOf(id);
+      const slot = raftSlots[idx] || raftSlots[0];
+      const raftPos = getRaftPosition();
+      return { x: raftPos.x + slot.x, y: raftPos.y + slot.y };
+    }
+
+    const onShore = CHARACTERS.filter(c => positions[c.id] === pos);
+    const slotIdx = onShore.findIndex(c => c.id === id);
+    const slots = pos === 'left' ? leftSlots : rightSlots;
+    const slot = slots[slotIdx] || slots[0];
+    return { x: slot.x, y: slot.y };
+  }
+
+  function animateTo(id, target, duration, callback){
+    const c = charEls[id];
+    const startX = c.x;
+    const startY = c.y;
+    const startTime = performance.now();
+
+    function tick(now){
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / duration);
+      const ease = t < 0.5
+        ? 2 * t * t
+        : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      c.x = startX + (target.x - startX) * ease;
+      c.y = startY + (target.y - startY) * ease;
+      c.g.setAttribute('transform', `translate(${c.x}, ${c.y})`);
+      if (t < 1){
+        requestAnimationFrame(tick);
+      } else {
+        c.x = target.x;
+        c.y = target.y;
+        if (callback) callback();
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function animateRaftTo(newSide, duration, callback){
+    if (isAnimating) return;
+    isAnimating = true;
+
+    const startRaftPos = getRaftPosition();
+    raftSide = newSide;
+    const endRaftPos = getRaftPosition();
+
+    const startTime = performance.now();
+
+    function tick(now){
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / duration);
+      const ease = t < 0.5
+        ? 2 * t * t
+        : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+      const raftX = startRaftPos.x + (endRaftPos.x - startRaftPos.x) * ease;
+      const raftY = startRaftPos.y + (endRaftPos.y - startRaftPos.y) * ease;
+      raftG.setAttribute('transform', `translate(${raftX}, ${raftY})`);
+
+      raftOccupants.forEach((id, idx) => {
+        const slot = raftSlots[idx] || raftSlots[0];
+        const c = charEls[id];
+        c.x = raftX + slot.x;
+        c.y = raftY + slot.y;
+        c.g.setAttribute('transform', `translate(${c.x}, ${c.y})`);
+      });
+
+      if (t < 1){
+        requestAnimationFrame(tick);
+      } else {
+        isAnimating = false;
+        if (callback) callback();
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function drawRaft(){
+    const pos = getRaftPosition();
+    raftG.setAttribute('transform', `translate(${pos.x}, ${pos.y})`);
+  }
+
+  function layoutAll(animate){
+    CHARACTERS.forEach(char => {
+      const target = getCharacterTarget(char.id);
+      if (animate){
+        animateTo(char.id, target, 300);
+      } else {
+        const c = charEls[char.id];
+        c.x = target.x;
+        c.y = target.y;
+        c.g.setAttribute('transform', `translate(${c.x}, ${c.y})`);
+      }
+    });
+    drawRaft();
+  }
+
+  svg.addEventListener('click', (e) => {
+    if (hasError || isAnimating) return;
+    const rect = svg.getBoundingClientRect();
+    const relX = (e.clientX - rect.left) / rect.width;
+    const relY = (e.clientY - rect.top) / rect.height;
+    const vx = relX * 400 - 200;
+    const vy = relY * 400 - 200;
+
+    const raftPos = getRaftPosition();
+    if (Math.abs(vx - raftPos.x) < 36 && Math.abs(vy - raftPos.y) < 22){
+      onRaftClick();
+      return;
+    }
+
+    for (const char of CHARACTERS){
+      const c = charEls[char.id];
+      const dx = vx - c.x;
+      const dy = vy - c.y;
+      if (dx * dx + dy * dy < 24 * 24){
+        onCharClick(char.id);
+        return;
+      }
+    }
+  });
+
+  function onCharClick(id){
+    if (isAnimating) return;
+    const pos = positions[id];
+
+    if ((pos === 'left' && raftSide === 'left') ||
+        (pos === 'right' && raftSide === 'right')){
+      if (raftOccupants.length < 2){
+        raftOccupants.push(id);
+        positions[id] = 'raft';
+        layoutAll(true);
+        updateUI();
+      }
+    }
+    else if (pos === 'raft'){
+      raftOccupants = raftOccupants.filter(x => x !== id);
+      positions[id] = raftSide;
+      layoutAll(true);
+      updateUI();
+    }
+  }
+
+  function onRaftClick(){
+    if (isAnimating) return;
+    if (raftOccupants.length === 0) return;
+
+    const hasDriver = raftOccupants.some(id => {
+      const c = CHARACTERS.find(c => c.id === id);
+      return c.canDrive;
+    });
+    if (!hasDriver){
+      showVerdict('Нужен водитель (отец/мать/полицейский)', 'error');
+      return;
+    }
+
+    hasError = false;
+    const newSide = raftSide === 'left' ? 'right' : 'left';
+
+    animateRaftTo(newSide, 700, () => {
+      raftOccupants.forEach(id => {
+        positions[id] = newSide;
+      });
+      raftOccupants = [];
+
+      const check = checkRules();
+      if (!check.ok){
+        hasError = true;
+        showVerdict('❌ ' + check.reason, 'error');
+      } else {
+        const allRight = CHARACTERS.every(c => positions[c.id] === 'right');
+        if (allRight){
+          showVerdict('🎉 Все переправились!', 'success');
+        } else {
+          showVerdict('✓ Ход ' + (moveIndex + 1) + ' сделан', 'success');
+          setTimeout(() => {
+            if (!hasError) showVerdict('Всё в порядке', '');
+          }, 900);
+        }
+      }
+
+      moveIndex++;
+      layoutAll(true);
+      updateUI();
+    });
+  }
+
+  const statOverlay = document.getElementById('statOverlay');
+  const verdictOverlay = document.getElementById('verdictOverlay');
+  const stepLabel = document.getElementById('stepLabel');
+  const totalLabel = document.getElementById('totalLabel');
+  const hint = document.getElementById('hint');
+  const slider = document.getElementById('slider');
+
+  function showVerdict(text, kind){
+    verdictOverlay.textContent = text;
+    verdictOverlay.classList.remove('error', 'success');
+    if (kind === 'error') verdictOverlay.classList.add('error');
+    else if (kind === 'success') verdictOverlay.classList.add('success');
+  }
+
+  function updateUI(){
+    statOverlay.textContent = 'Ход ' + moveIndex + ' / 17';
+    const onLeft = CHARACTERS.filter(c => positions[c.id] === 'left').length;
+    const onRight = CHARACTERS.filter(c => positions[c.id] === 'right').length;
+    const onRaft = raftOccupants.length;
+    let s = onLeft + ' слева';
+    if (onRaft > 0) s += ' · ' + onRaft + ' на плоту';
+    s += ' · ' + onRight + ' справа';
+    totalLabel.textContent = s;
+    slider.value = moveIndex;
+  }
+
+  const hintBtn = document.getElementById('hintBtn');
+  const autoBtn = document.getElementById('autoBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  function applySolutionMove(idx, callback){
+    if (idx >= SOLUTION.length){
+      if (callback) callback();
+      return;
+    }
+    if (isAnimating) {
+      if (callback) setTimeout(() => applySolutionMove(idx, callback), 200);
+      return;
+    }
+
+    const move = SOLUTION[idx];
+    const targetSide = (idx % 2 === 0) ? 'right' : 'left';
+
+    raftOccupants.forEach(id => {
+      positions[id] = raftSide;
+    });
+    raftOccupants = [];
+
+    move.forEach(id => {
+      positions[id] = 'raft';
+      raftOccupants.push(id);
+    });
+
+    layoutAll(true);
+
+    setTimeout(() => {
+      hasError = false;
+      animateRaftTo(targetSide, 700, () => {
+        raftOccupants.forEach(id => {
+          positions[id] = targetSide;
+        });
+        raftOccupants = [];
+        moveIndex = idx + 1;
+        layoutAll(true);
+        updateUI();
+
+        const check = checkRules();
+        if (!check.ok){
+          hasError = true;
+          showVerdict('❌ ' + check.reason, 'error');
+        } else {
+          const allRight = CHARACTERS.every(c => positions[c.id] === 'right');
+          if (allRight){
+            showVerdict('🎉 Все переправились!', 'success');
+          } else {
+            showVerdict('✓ Ход ' + moveIndex, 'success');
+          }
+        }
+
+        if (callback) callback();
+      });
+    }, 400);
+  }
+
+  hintBtn.addEventListener('click', () => {
+    if (hasError) return;
+    if (moveIndex >= SOLUTION.length) return;
+    applySolutionMove(moveIndex);
+  });
+
+  let autoInterval = null;
+  autoBtn.addEventListener('click', () => {
+    if (autoInterval !== null){
+      clearInterval(autoInterval);
+      autoInterval = null;
+      autoBtn.textContent = '▶ Авто';
+      return;
+    }
+    autoBtn.textContent = '❚❚ Пауза';
+    applySolutionMove(moveIndex, () => {
+      autoInterval = setInterval(() => {
+        if (moveIndex >= SOLUTION.length){
+          clearInterval(autoInterval);
+          autoInterval = null;
+          autoBtn.textContent = '▶ Авто';
+          return;
+        }
+        applySolutionMove(moveIndex);
+      }, 2500);
+    });
+  });
+
+  resetBtn.addEventListener('click', () => {
+    if (autoInterval !== null){
+      clearInterval(autoInterval);
+      autoInterval = null;
+      autoBtn.textContent = '▶ Авто';
+    }
+    if (isAnimating) return;
+    resetState();
+    layoutAll(false);
+    updateUI();
+    showVerdict('Всё в порядке', '');
+  });
+
+  resetState();
+  layoutAll(false);
+  updateUI();
+  showVerdict('Всё в порядке', '');
+
+})();
+</script>
+</body>
+</html>

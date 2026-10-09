@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Правила Игры «Жизнь»</title>
+<style>
+  * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: #eceef2;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+    padding: 8px;
+  }
+
+  .phone-frame {
+    position: relative;
+    width: min(96vw, 96vh * 9 / 16);
+    max-width: 460px;
+    padding-top: calc(min(96vw, 96vh * 9 / 16) * 16 / 9);
+    max-height: 98vh;
+    background: linear-gradient(160deg, #ffffff 0%, #f0f1f5 60%, #e4e6ec 100%);
+    border-radius: 36px;
+    box-shadow:
+      0 0 0 1px rgba(120, 125, 140, 0.25),
+      0 24px 45px rgba(60, 65, 85, 0.18),
+      0 10px 20px rgba(60, 65, 85, 0.10);
+    overflow: hidden;
+  }
+  .phone-inner {
+    position: absolute;
+    top: 12px; left: 12px; right: 12px; bottom: 12px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .screen {
+    flex: 1;
+    border-radius: 24px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: #fdfbf3;
+    min-height: 0;
+    box-shadow: 0 0 0 1px rgba(120, 125, 140, 0.25);
+  }
+
+  .stage-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    min-height: 0;
+    min-width: 0;
+    gap: 6px;
+    position: relative;
+  }
+
+  /* Три мини-поля вертикально */
+  .rule-block {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    min-height: 0;
+  }
+
+  .rule-block svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  /* Подпись под полем */
+  .rule-label {
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(46, 42, 61, 0.85);
+    color: #fff;
+    font-size: .62rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 10px;
+    white-space: nowrap;
+    pointer-events: none;
+    letter-spacing: .2px;
+    z-index: 5;
+  }
+  .rule-label .num {
+    display: inline-block;
+    background: #d9a640;
+    color: #2e2a3d;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+    text-align: center;
+    border-radius: 50%;
+    font-size: .58rem;
+    margin-right: 3px;
+    font-weight: 800;
+  }
+
+  /* Оверлей с числом соседей */
+  .neighbor-count {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(46, 42, 61, 0.92);
+    color: #b8f0b8;
+    font-size: .72rem;
+    font-weight: 800;
+    padding: 3px 9px;
+    border-radius: 10px;
+    box-shadow: 0 3px 8px rgba(0,0,0,.2);
+    pointer-events: none;
+    z-index: 10;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    letter-spacing: .2px;
+    opacity: 0;
+    transition: opacity .25s;
+  }
+  .neighbor-count.show { opacity: 1; }
+
+  /* Главный заголовок стадии */
+  .stage-caption {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(46, 42, 61, 0.9);
+    color: #ffe9a8;
+    font-size: .72rem;
+    font-weight: 800;
+    padding: 4px 14px;
+    border-radius: 12px;
+    pointer-events: none;
+    z-index: 10;
+    white-space: nowrap;
+    letter-spacing: .3px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.25);
+  }
+
+  .controls {
+    background: linear-gradient(180deg, #ffffff, #eef0f4);
+    padding: 10px 12px 14px;
+    border-radius: 0 0 24px 24px;
+    display: flex; flex-direction: column; gap: 6px;
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
+  }
+
+  .row {
+    display: flex; justify-content: space-between; align-items: center;
+    color: #4a4a5a; font-size: .85rem; font-weight: 600;
+    gap: 8px;
+  }
+  .pill {
+    background: #ffffff; padding: 5px 13px; border-radius: 30px;
+    color: #2e2a3d; font-weight: 700; font-size: .72rem;
+    white-space: nowrap;
+    max-width: 78%;
+    overflow: hidden; text-overflow: ellipsis;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  .pill.count {
+    background: #e6f5e6; color: #2e6b34;
+    flex-shrink: 0;
+  }
+
+  .btn-row { display: flex; align-items: center; gap: 6px; width: 100%; }
+  .btn {
+    flex: 0 0 auto;
+    background: #ffffff; color: #2e2a3d;
+    border: none; border-radius: 30px;
+    padding: 8px 10px;
+    font-size: .74rem; font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    box-shadow: 0 2px 0 #d0d2d8, 0 3px 8px rgba(0,0,0,.08);
+    transition: background .15s, transform .08s;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn.play {
+    background: linear-gradient(180deg, #4aa354, #2e6b34);
+    color: #ffffff; width: 82px;
+  }
+  .btn.step {
+    background: linear-gradient(180deg, #6fa8dc, #3d7eb8);
+    color: #ffffff; width: 62px;
+  }
+  .btn.reset {
+    background: linear-gradient(180deg, #c98070, #a0523a);
+    color: #ffffff; width: 66px;
+  }
+  .speed-box {
+    display: flex; align-items: center; gap: 4px;
+    background: #ffffff; padding: 4px 8px;
+    border-radius: 30px; flex: 1 1 auto;
+    justify-content: center; min-width: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  .speed-box label { color: #8a8a9a; font-size: .68rem; font-weight: 700; }
+  .speed-box input[type=number] {
+    width: 38px;
+    background: #f4f5f7; color: #2e6b34;
+    border: 1px solid #d8dae0; border-radius: 8px;
+    padding: 2px 3px; font-size: .72rem; font-weight: 700;
+    text-align: center; outline: none;
+    font-family: inherit;
+  }
+  .speed-box span { color: #8a8a9a; font-size: .68rem; font-weight: 600; }
+
+  .hint {
+    color: #8a8a9a; font-size: .66rem; text-align: center;
+    line-height: 1.3;
+  }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="phone-inner">
+    <div class="screen">
+      <div class="stage-wrap">
+        <div class="stage-caption" id="stageCaption">Такт 1 · показываем соседей</div>
+
+        <!-- Правило 1. Рождение -->
+        <div class="rule-block" id="blockBirth">
+          <svg viewBox="-200 -200 400 400" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="neighbor-count" id="countBirth">3 соседа</div>
+          <div class="rule-label"><span class="num">1</span>Рождение · B3</div>
+        </div>
+
+        <!-- Правило 2. Выживание -->
+        <div class="rule-block" id="blockSurvive">
+          <svg viewBox="-200 -200 400 400" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="neighbor-count" id="countSurvive">2 соседа</div>
+          <div class="rule-label"><span class="num">2</span>Выживание · S23</div>
+        </div>
+
+        <!-- Правило 3. Смерть -->
+        <div class="rule-block" id="blockDeath">
+          <svg viewBox="-200 -200 400 400" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="neighbor-count" id="countDeath">5 соседей</div>
+          <div class="rule-label"><span class="num">3</span>Смерть · иначе</div>
+        </div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="row">
+        <span class="pill" id="stepLabel">Правила игры «Жизнь»</span>
+        <span class="pill count" id="phaseLabel">Такт 1</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn play"  id="playBtn">▶ Пуск</button>
+        <button class="btn step"  id="stepBtn">Шаг</button>
+        <button class="btn reset" id="resetBtn">↺ Сброс</button>
+        <div class="speed-box">
+          <label>⏱</label>
+          <input type="number" id="speedInput" min="1" max="10" value="2" step="0.5">
+          <span>сек</span>
+        </div>
+      </div>
+      <div class="hint">Центральная клетка и её 8 соседей. Смотрим, что с ней произойдёт</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const NS = 'http://www.w3.org/2000/svg';
+
+  // ==================================================================
+  // КОНФИГУРАЦИЯ
+  // ==================================================================
+  // Поле 5×5, центр в (2, 2). Соседи — все 8 клеток вокруг.
+  const N = 5;
+  const CELL = 60;
+  const HALF = 200;
+  const OFFSET = -HALF + CELL * ((N - 1) / 2) - CELL / 2 + CELL / 2;
+
+  function cellCenter(x, y){
+    // x, y — индексы 0..N-1. Центр поля (2,2) → (0,0) в SVG.
+    return {
+      x: (x - 2) * CELL,
+      y: (y - 2) * CELL,
+    };
+  }
+
+  // Три набора соседей и состояние центра
+  const RULES = {
+    birth: {
+      // 3 соседа, центр мёртвый
+      neighbors: [
+        [1,1], [3,1], [2,0]
+      ],
+      centerAlive: false,
+      result: 1,            // центр станет живым
+      label: 'Рождение · B3',
+      count: 3
+    },
+    survive: {
+      // 2 соседа, центр живой
+      neighbors: [
+        [1,1], [3,1]
+      ],
+      centerAlive: true,
+      result: 1,            // центр остаётся живым
+      label: 'Выживание · S23',
+      count: 2
+    },
+    death: {
+      // 5 соседей, центр живой
+      neighbors: [
+        [1,1], [3,1], [1,3], [3,3], [2,0]
+      ],
+      centerAlive: true,
+      result: 0,            // центр умирает
+      label: 'Смерть · иначе',
+      count: 5
+    }
+  };
+
+  // ==================================================================
+  // SVG — рисуем сетку и клетки
+  // ==================================================================
+  function el(tag, attrs){
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  const blocks = {
+    birth: document.querySelector('#blockBirth svg'),
+    survive: document.querySelector('#blockSurvive svg'),
+    death: document.querySelector('#blockDeath svg')
+  };
+
+  const cellEls = {
+    birth: [],
+    survive: [],
+    death: []
+  };
+
+  function setupBlock(svgEl, key){
+    const gridLayer = el('g', {});
+    const cellLayer = el('g', {});
+    svgEl.appendChild(gridLayer);
+    svgEl.appendChild(cellLayer);
+
+    // Сетка 5×5
+    for (let i = 0; i <= N; i++){
+      const pos = -HALF + CELL * ((N - 1) / 2) + (i - (N-1)/2) * CELL;
+      gridLayer.appendChild(el('line', {
+        x1: -HALF + CELL * ((N - 1) / 2) - CELL * (N/2) + CELL/2,
+        // проще: рисуем сетку через смещение от центра
+      }));
+    }
+    // Пересчитываю сетку аккуратно
+    gridLayer.innerHTML = '';
+    for (let i = 0; i <= N; i++){
+      const offset = (i - (N - 1) / 2) * CELL - CELL / 2;
+      gridLayer.appendChild(el('line', {
+        x1: offset, y1: -(N*CELL)/2, x2: offset, y2: (N*CELL)/2,
+        stroke: '#c8d6e8', 'stroke-width': 1,
+      }));
+      gridLayer.appendChild(el('line', {
+        x1: -(N*CELL)/2, y1: offset, x2: (N*CELL)/2, y2: offset,
+        stroke: '#c8d6e8', 'stroke-width': 1,
+      }));
+    }
+    // Внешняя рамка
+    const halfField = (N * CELL) / 2;
+    gridLayer.appendChild(el('rect', {
+      x: -halfField, y: -halfField, width: N*CELL, height: N*CELL,
+      fill: 'none', stroke: '#8aa8c8', 'stroke-width': 2,
+    }));
+
+    // Клетки
+    for (let y = 0; y < N; y++){
+      cellEls[key][y] = [];
+      for (let x = 0; x < N; x++){
+        const c = cellCenter(x, y);
+        const rect = el('rect', {
+          x: c.x - CELL/2 + 1, y: c.y - CELL/2 + 1,
+          width: CELL - 2, height: CELL - 2,
+          rx: 4, ry: 4,
+          fill: '#ffffff',
+          stroke: '#e2e8f0',
+          'stroke-width': 0.5,
+        });
+        cellLayer.appendChild(rect);
+        cellEls[key][y][x] = rect;
+      }
+    }
+  }
+
+  setupBlock(blocks.birth, 'birth');
+  setupBlock(blocks.survive, 'survive');
+  setupBlock(blocks.death, 'death');
+
+  // ==================================================================
+  // ФАЗЫ АНИМАЦИИ
+  // ==================================================================
+  // 0 — показать соседей (бледные контуры)
+  // 1 — подсветить живых соседей и показать счётчик
+  // 2 — применить правило к центру
+  const PHASES = [
+    { label: 'Такт 1 · показываем соседей' },
+    { label: 'Такт 2 · считаем живых соседей' },
+    { label: 'Такт 3 · применяем правило' },
+  ];
+
+  let phase = 0;
+  let intervalId = null;
+
+  // Текущее состояние клеток (для плавной анимации)
+  const state = {
+    birth: { neighbors: [], center: 0 },
+    survive: { neighbors: [], center: 0 },
+    death: { neighbors: [], center: 0 }
+  };
+
+  function resetState(){
+    Object.keys(RULES).forEach(key => {
+      const r = RULES[key];
+      state[key].neighbors = r.neighbors.map(() => 0);
+      state[key].center = r.centerAlive ? 1 : 0;
+    });
+    phase = 0;
+  }
+
+  // ==================================================================
+  // ОТРИСОВКА
+  // ==================================================================
+  function render(){
+    Object.keys(RULES).forEach(key => {
+      const r = RULES[key];
+      const cells = cellEls[key];
+      const st = state[key];
+
+      // Обнуляем все клетки
+      for (let y = 0; y < N; y++){
+        for (let x = 0; x < N; x++){
+          cells[y][x].setAttribute('fill', '#ffffff');
+          cells[y][x].setAttribute('opacity', 1);
+          cells[y][x].setAttribute('stroke', '#e2e8f0');
+          cells[y][x].setAttribute('stroke-width', 0.5);
+        }
+      }
+
+      // Показываем соседей
+      r.neighbors.forEach(([nx, ny], i) => {
+        const cell = cells[ny][nx];
+        if (phase === 0){
+          // Фаза 0: подсвечиваем соседей бледным
+          cell.setAttribute('fill', '#e8f5e8');
+          cell.setAttribute('stroke', '#4aa354');
+          cell.setAttribute('stroke-width', 1.5);
+        } else {
+          // Фаза 1+: соседи живые (зелёные)
+          cell.setAttribute('fill', '#4aa354');
+          cell.setAttribute('stroke', '#2e6b34');
+          cell.setAttribute('stroke-width', 1.5);
+        }
+      });
+
+      // Центральная клетка
+      const centerCell = cells[2][2];
+      if (phase < 2){
+        // До фазы 2 — центр в исходном состоянии
+        if (r.centerAlive){
+          centerCell.setAttribute('fill', '#4aa354');
+          centerCell.setAttribute('stroke', '#2e6b34');
+          centerCell.setAttribute('stroke-width', 2);
+        } else {
+          centerCell.setAttribute('fill', '#ffffff');
+          centerCell.setAttribute('stroke', '#d9a640');
+          centerCell.setAttribute('stroke-width', 2);
+        }
+      } else {
+        // Фаза 2 — центр по правилу
+        if (r.result === 1){
+          centerCell.setAttribute('fill', '#8ee08e');
+          centerCell.setAttribute('stroke', '#2e6b34');
+          centerCell.setAttribute('stroke-width', 2.5);
+        } else {
+          centerCell.setAttribute('fill', '#f5c8c8');
+          centerCell.setAttribute('stroke', '#c0392b');
+          centerCell.setAttribute('stroke-width', 2);
+        }
+      }
+    });
+  }
+
+  // ==================================================================
+  // УПРАВЛЕНИЕ
+  // ==================================================================
+  const stageCaption = document.getElementById('stageCaption');
+  const phaseLabel = document.getElementById('phaseLabel');
+  const countBirth = document.getElementById('countBirth');
+  const countSurvive = document.getElementById('countSurvive');
+  const countDeath = document.getElementById('countDeath');
+
+  function updateUI(){
+    stageCaption.textContent = PHASES[phase].label;
+    phaseLabel.textContent = 'Такт ' + (phase + 1);
+
+    // Счётчики соседей показываем на фазе 1 и 2
+    const showCounts = phase >= 1;
+    countBirth.classList.toggle('show', showCounts);
+    countSurvive.classList.toggle('show', showCounts);
+    countDeath.classList.toggle('show', showCounts);
+
+    if (showCounts){
+      countBirth.textContent = '3 соседа';
+      countSurvive.textContent = '2 соседа';
+      countDeath.textContent = '5 соседей';
+    }
+
+    render();
+  }
+
+  function nextPhase(){
+    phase = (phase + 1) % 3;
+    if (phase === 0){
+      // Начало нового цикла — сбрасываем в начальное состояние
+      resetState();
+      phase = 0;
+    }
+    updateUI();
+  }
+
+  const playBtn = document.getElementById('playBtn');
+  const stepBtn = document.getElementById('stepBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const speedInput = document.getElementById('speedInput');
+
+  function startPlay(){
+    if (intervalId !== null) return;
+    const sec = Math.max(0.5, Math.min(10, parseFloat(speedInput.value) || 2));
+    const ms = sec * 1000;
+    intervalId = setInterval(nextPhase, ms);
+    playBtn.textContent = '❚❚ Пауза';
+  }
+
+  function stopPlay(){
+    if (intervalId !== null){
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+    playBtn.textContent = '▶ Пуск';
+  }
+
+  playBtn.addEventListener('click', () => {
+    if (intervalId !== null) stopPlay();
+    else startPlay();
+  });
+
+  stepBtn.addEventListener('click', () => {
+    stopPlay();
+    nextPhase();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    stopPlay();
+    resetState();
+    phase = 0;
+    updateUI();
+  });
+
+  speedInput.addEventListener('input', () => {
+    if (intervalId !== null){
+      stopPlay();
+      startPlay();
+    }
+  });
+
+  // Старт
+  resetState();
+  updateUI();
+
+})();
+</script>
+</body>
+</html>
