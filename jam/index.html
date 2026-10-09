@@ -1,0 +1,609 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>32 банки варенья · задача о слуге</title>
+<style>
+  * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; min-height: 100vh;
+    /* Чуть тёплый фон, чтобы белый корпус читался */
+    background: #eceef2;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+    padding: 8px;
+  }
+
+  /* Светлый корпус «телефона» с чёткой границей */
+  .phone-frame {
+    aspect-ratio: 9 / 16;
+    width: min(96vw, 96vh * 9 / 16);
+    max-width: 460px; max-height: 98vh;
+    background: linear-gradient(160deg, #ffffff 0%, #f0f1f5 60%, #e4e6ec 100%);
+    border-radius: 36px;
+    padding: 12px;
+    /* Многослойная тень + внутренняя светлая обводка + тёмная внешняя рамка */
+    box-shadow:
+      0 0 0 1px rgba(120, 125, 140, 0.25),
+      0 1px 0 0 rgba(255, 255, 255, 1) inset,
+      0 24px 45px rgba(60, 65, 85, 0.18),
+      0 10px 20px rgba(60, 65, 85, 0.10),
+      0 3px 6px rgba(60, 65, 85, 0.08);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Блик по верхнему краю корпуса */
+  .phone-frame::before {
+    content: '';
+    position: absolute;
+    inset: 2px 2px auto 2px;
+    height: 40%;
+    border-radius: 34px 34px 60% 60% / 34px 34px 30px 30px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.65), rgba(255,255,255,0));
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .screen {
+    flex: 1; border-radius: 24px; overflow: hidden;
+    display: flex; flex-direction: column;
+    position: relative;
+    background-color: #fdfbf3;
+    background-image:
+      linear-gradient(to right, #c8d6e8 1px, transparent 1px),
+      linear-gradient(to bottom, #c8d6e8 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position: 0 0;
+    min-height: 0;
+    /* Тёмная внутренняя рамка, отделяющая экран от корпуса */
+    box-shadow:
+      0 0 0 1px rgba(120, 125, 140, 0.25),
+      inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+    z-index: 2;
+  }
+
+  .cabinet {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 24px 18px;
+    min-height: 0;
+  }
+
+  .cabinet-inner {
+    width: min(100%, 78vh);
+    height: min(100%, 78vh);
+    aspect-ratio: 1 / 1;
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    grid-template-rows: repeat(9, 1fr);
+    gap: 2px;
+    padding: 6px;
+    background: rgba(255, 250, 235, 0.55);
+    border-radius: 12px;
+    box-shadow:
+      0 0 0 3px #a8835e,
+      0 0 0 7px #5c3f2b,
+      0 4px 14px rgba(0,0,0,.18);
+    position: relative;
+  }
+
+  .wall-tag {
+    position: absolute;
+    font-size: .72rem; font-weight: 700;
+    background: #2e2a3d; color: #ffe9a8;
+    padding: 3px 9px; border-radius: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.4);
+    letter-spacing: .4px; pointer-events: none;
+    transition: background .2s, color .2s;
+    z-index: 5;
+  }
+  .wall-tag.top    { top: -14px; left: 50%; transform: translateX(-50%); }
+  .wall-tag.bottom { bottom: -14px; left: 50%; transform: translateX(-50%); }
+  .wall-tag.left   { left: -18px; top: 50%; transform: translateY(-50%) rotate(-90deg); }
+  .wall-tag.right  { right: -18px; top: 50%; transform: translateY(-50%) rotate(90deg); }
+  .wall-tag.bad    { background: #6b2222; color: #ffb4b4; }
+
+  .bottle {
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity .35s ease, transform .35s ease, filter .35s ease;
+    will-change: opacity, transform, filter;
+    position: relative;
+  }
+  .bottle svg { width: 88%; height: 88%; display: block; }
+
+  .bottle .count-badge {
+    position: absolute;
+    bottom: -1px; right: -1px;
+    background: #b8860b; color: #fff;
+    font-size: .58rem; font-weight: 800;
+    min-width: 13px; height: 13px;
+    line-height: 13px; text-align: center;
+    border-radius: 7px; padding: 0 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.4);
+    display: none;
+    z-index: 3;
+  }
+  .bottle.multi .count-badge { display: block; }
+
+  .bottle.highlight svg {
+    filter: drop-shadow(0 0 6px #ffcc33) drop-shadow(0 0 12px #ffaa00);
+    animation: pulse 0.9s ease-in-out infinite;
+  }
+  .bottle.highlight { z-index: 10; }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.18); }
+  }
+
+  .bottle.fading {
+    opacity: 0 !important;
+    transform: scale(0.3) rotate(15deg) !important;
+    filter: blur(2px);
+    pointer-events: none;
+  }
+
+  /* Светлая панель управления */
+  .controls {
+    background: linear-gradient(180deg, #ffffff, #eef0f4);
+    padding: 12px 14px 16px;
+    border-radius: 0 0 24px 24px;
+    display: flex; flex-direction: column; gap: 8px;
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.9),
+                inset 0 2px 6px rgba(0,0,0,.03);
+    position: relative;
+    z-index: 2;
+  }
+  .row {
+    display: flex; justify-content: space-between; align-items: center;
+    color: #4a4a5a; font-size: .85rem; font-weight: 600;
+    gap: 8px;
+  }
+  .pill {
+    background: #ffffff; padding: 5px 13px; border-radius: 30px;
+    color: #2e2a3d; font-weight: 700; font-size: .78rem;
+    letter-spacing: .3px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+    max-width: 65%;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08), inset 0 0 0 1px rgba(0,0,0,.06);
+  }
+  .pill.count {
+    background: #e6f5e6; color: #2e6b34;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08), inset 0 0 0 1px rgba(46,107,52,.15);
+    flex-shrink: 0;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 9px;
+    border-radius: 10px; background: #d8dae0;
+    outline: none; margin: 2px 0 0;
+    cursor: pointer;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.1);
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #ffffff, #e8d49d);
+    border: 1px solid #b28b4f;
+    cursor: pointer;
+    box-shadow: 0 3px 8px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.8);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: linear-gradient(145deg, #ffffff, #e8d49d);
+    border: 1px solid #b28b4f; cursor: pointer;
+    box-shadow: 0 3px 8px rgba(0,0,0,.22);
+  }
+
+  .btn-row {
+    display: flex; align-items: center; gap: 6px;
+    width: 100%;
+  }
+  .btn {
+    flex: 0 0 auto;
+    background: #ffffff; color: #2e2a3d;
+    border: none; border-radius: 30px;
+    padding: 8px 10px;
+    font-size: .74rem; font-weight: 700;
+    cursor: pointer;
+    box-shadow:
+      0 2px 0 #d0d2d8,
+      0 3px 8px rgba(0,0,0,.08),
+      inset 0 1px 0 rgba(255,255,255,.9);
+    transition: background .15s, transform .08s;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .btn:hover { background: #f0f1f4; }
+  .btn:active { transform: translateY(1px); box-shadow: 0 1px 0 #d0d2d8, 0 2px 5px rgba(0,0,0,.1); }
+  .btn.play {
+    background: linear-gradient(180deg, #4aa354, #2e6b34);
+    color: #ffffff;
+    width: 82px;
+    box-shadow:
+      0 2px 0 #1a3d1f,
+      0 3px 8px rgba(46,107,52,.3),
+      inset 0 1px 0 rgba(255,255,255,.25);
+  }
+  .btn.play:hover { background: linear-gradient(180deg, #57b461, #3a8342); }
+  .btn.reset {
+    background: linear-gradient(180deg, #c98070, #a0523a);
+    color: #ffffff;
+    width: 66px;
+    box-shadow:
+      0 2px 0 #5e2e1a,
+      0 3px 8px rgba(160,82,58,.3),
+      inset 0 1px 0 rgba(255,255,255,.2);
+  }
+  .btn.reset:hover { background: linear-gradient(180deg, #d68f80, #b05e44); }
+
+  .speed-box {
+    display: flex; align-items: center; gap: 4px;
+    background: #ffffff; padding: 4px 8px;
+    border-radius: 30px; flex: 1 1 auto;
+    justify-content: center; min-width: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08), inset 0 0 0 1px rgba(0,0,0,.06);
+  }
+  .speed-box label { color: #8a8a9a; font-size: .68rem; font-weight: 700; }
+  .speed-box input[type=number] {
+    width: 34px;
+    background: #f4f5f7; color: #2e6b34;
+    border: 1px solid #d8dae0; border-radius: 8px;
+    padding: 2px 3px; font-size: .72rem; font-weight: 700;
+    text-align: center; outline: none;
+    font-family: inherit; -moz-appearance: textfield;
+  }
+  .speed-box input[type=number]::-webkit-outer-spin-button,
+  .speed-box input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none; margin: 0;
+  }
+  .speed-box input[type=number]:focus { border-color: #b28b4f; }
+  .speed-box span { color: #8a8a9a; font-size: .68rem; font-weight: 600; }
+
+  .hint {
+    color: #8a8a9a; font-size: .66rem; text-align: center;
+    letter-spacing: .2px; line-height: 1.3;
+  }
+
+  .phase-row {
+    display: flex; justify-content: center; gap: 5px;
+    margin-top: -2px;
+  }
+  .phase-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #d0d2d8;
+    transition: background .2s, transform .2s;
+  }
+  .phase-dot.active { background: #d9a640; transform: scale(1.4); }
+  .phase-dot.done   { background: #4a9e52; }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="screen">
+    <div class="cabinet">
+      <div class="cabinet-inner" id="cabinet">
+        <div class="wall-tag top"    id="tagTop">9</div>
+        <div class="wall-tag bottom" id="tagBottom">9</div>
+        <div class="wall-tag left"   id="tagLeft">9</div>
+        <div class="wall-tag right"  id="tagRight">9</div>
+      </div>
+    </div>
+  </div>
+  <div class="controls">
+    <div class="row">
+      <span class="pill" id="stepLabel">Начало · 32 банки</span>
+      <span class="pill count" id="totalLabel">32 шт.</span>
+    </div>
+    <input type="range" id="slider" min="0" max="100" value="0" step="0.1">
+    <div class="phase-row" id="phaseRow">
+      <div class="phase-dot active"></div>
+      <div class="phase-dot"></div>
+      <div class="phase-dot"></div>
+      <div class="phase-dot"></div>
+      <div class="phase-dot"></div>
+      <div class="phase-dot"></div>
+      <div class="phase-dot"></div>
+      <div class="phase-dot"></div>
+      <div class="phase-dot"></div>
+      <div class="phase-dot"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn play"  id="playBtn">▶ Пуск</button>
+      <button class="btn reset" id="resetBtn">↺ Сброс</button>
+      <div class="speed-box">
+        <label>⏱</label>
+        <input type="number" id="speedInput" min="2" max="60" value="10" step="1">
+        <span>с</span>
+      </div>
+    </div>
+    <div class="hint">Слуга крадёт по 4 банки, но вдоль каждой стены всё те же 9 →</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const N = 9;
+
+  const STATES = [
+    { corner: 1, edge: 7, label: 'Начало · 32 банки' },
+    { corner: 2, edge: 5, label: 'Кража 1 · 28 банок' },
+    { corner: 3, edge: 3, label: 'Кража 2 · 24 банки' },
+    { corner: 4, edge: 1, label: 'Кража 3 · 20 банок' },
+  ];
+
+  const cabinet = document.getElementById('cabinet');
+  const grid = Array.from({ length: N }, () => Array(N).fill(null));
+
+  function jarSVG(seed){
+    const jamColors = [
+      { dark: '#a83232', mid: '#d94a4a', light: '#f07070' },
+      { dark: '#8b3a1f', mid: '#c75a2e', light: '#e07a4a' },
+      { dark: '#5e3a8b', mid: '#8b5eb8', light: '#b088d9' },
+      { dark: '#7a5220', mid: '#b5843a', light: '#d9a860' },
+    ];
+    const c = jamColors[seed % jamColors.length];
+
+    return `<svg viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="12" cy="30" rx="8" ry="1.2" fill="#000" opacity="0.18"/>
+      <path d="M6 8 Q6 6 7 6 L17 6 Q18 6 18 8 L18 28 Q18 30 16 30 L8 30 Q6 30 6 28 Z"
+            fill="#e8f4f8" stroke="#7a9aa8" stroke-width="0.6" opacity="0.9"/>
+      <path d="M7 12 L17 12 L17 28 Q17 29 16 29 L8 29 Q7 29 7 28 Z"
+            fill="${c.mid}"/>
+      <path d="M8 14 L10 14 L10 26 L8 26 Z" fill="${c.light}" opacity="0.5"/>
+      <circle cx="11" cy="18" r="1.2" fill="${c.dark}" opacity="0.55"/>
+      <circle cx="14" cy="22" r="1.1" fill="${c.dark}" opacity="0.5"/>
+      <circle cx="10" cy="24" r="0.9" fill="${c.dark}" opacity="0.5"/>
+      <rect x="7" y="5" width="10" height="3" fill="#d8e8f0" stroke="#7a9aa8" stroke-width="0.5"/>
+      <rect x="6.5" y="3" width="11" height="3" rx="0.8" fill="#c9a94a"/>
+      <rect x="6.5" y="3" width="11" height="1" rx="0.5" fill="#e0c060"/>
+      <line x1="7" y1="4" x2="17" y2="4" stroke="#8a6a1a" stroke-width="0.3" opacity="0.5"/>
+      <line x1="7" y1="5.2" x2="17" y2="5.2" stroke="#8a6a1a" stroke-width="0.3" opacity="0.4"/>
+      <rect x="7.5" y="16" width="9" height="6" rx="0.8" fill="#fff8e8" stroke="#c9a94a" stroke-width="0.4"/>
+      <text x="12" y="20.5" font-size="2.4" font-weight="700" fill="#8a3a2a"
+            text-anchor="middle" font-family="Georgia, serif">ВАРЕНЬЕ</text>
+      <text x="12" y="21.8" font-size="1.2" fill="#a87a4a"
+            text-anchor="middle" font-family="Georgia, serif">домашнее</text>
+      <path d="M7.5 9 L8.2 9 L8.2 27 L7.5 27 Z" fill="#fff" opacity="0.35"/>
+    </svg>`;
+  }
+
+  for (let r = 0; r < N; r++){
+    for (let c = 0; c < N; c++){
+      const div = document.createElement('div');
+      div.className = 'bottle';
+      div.dataset.r = r; div.dataset.c = c;
+      const badge = document.createElement('span');
+      badge.className = 'count-badge';
+      div.appendChild(badge);
+      grid[r][c] = div;
+      cabinet.appendChild(div);
+    }
+  }
+
+  const corners = [[0,0],[0,8],[8,0],[8,8]];
+  const edgePositions = {
+    top:    Array.from({length:7}, (_,i) => ({ r: 0, c: 1 + i })),
+    bottom: Array.from({length:7}, (_,i) => ({ r: 8, c: 1 + i })),
+    left:   Array.from({length:7}, (_,i) => ({ r: 1 + i, c: 0 })),
+    right:  Array.from({length:7}, (_,i) => ({ r: 1 + i, c: 8 })),
+  };
+
+  function getCenteredEdgeIndices(edge){
+    if (edge >= 7) return [0,1,2,3,4,5,6];
+    const start = (7 - edge) / 2;
+    const result = [];
+    for (let i = 0; i < edge; i++) result.push(start + i);
+    return result;
+  }
+
+  const PHASES = [
+    { t: 0.00, type: 'state',     stateIdx: 0, label: 'Начало · 32 банки' },
+    { t: 0.08, type: 'highlight', stateIdx: 0, nextIdx: 1, label: 'Слуга выбирает 4…' },
+    { t: 0.18, type: 'fade',      stateIdx: 0, nextIdx: 1, label: 'Кража! 4 исчезают…' },
+    { t: 0.32, type: 'state',     stateIdx: 1, label: 'Кража 1 · 28 банок' },
+    { t: 0.40, type: 'highlight', stateIdx: 1, nextIdx: 2, label: 'Слуга выбирает 4…' },
+    { t: 0.50, type: 'fade',      stateIdx: 1, nextIdx: 2, label: 'Кража! Ещё 4…' },
+    { t: 0.62, type: 'state',     stateIdx: 2, label: 'Кража 2 · 24 банки' },
+    { t: 0.70, type: 'highlight', stateIdx: 2, nextIdx: 3, label: 'Последние 4…' },
+    { t: 0.80, type: 'fade',      stateIdx: 2, nextIdx: 3, label: 'Кража! Финал…' },
+    { t: 1.00, type: 'state',     stateIdx: 3, label: 'Финал · 20 банок' },
+  ];
+
+  function getPositionsForState(state){
+    const map = new Map();
+    corners.forEach(([r,c]) => {
+      map.set(`${r},${c}`, { count: state.corner, type: 'corner' });
+    });
+    const indices = getCenteredEdgeIndices(state.edge);
+    Object.entries(edgePositions).forEach(([wall, positions]) => {
+      positions.forEach((pos, idx) => {
+        if (indices.includes(idx)) {
+          map.set(`${pos.r},${pos.c}`, { count: 1, type: 'edge', wall, order: idx });
+        }
+      });
+    });
+    return map;
+  }
+
+  function getStolenBottles(stateA, stateB){
+    const indicesA = getCenteredEdgeIndices(stateA.edge);
+    const indicesB = getCenteredEdgeIndices(stateB.edge);
+    const disappearing = indicesA.filter(i => !indicesB.includes(i));
+    const stolenIdx = disappearing.length > 0 ? disappearing[0] : null;
+    if (stolenIdx === null) return [];
+    const stolen = [];
+    Object.entries(edgePositions).forEach(([wall, positions]) => {
+      if (stolenIdx < positions.length) {
+        stolen.push({ r: positions[stolenIdx].r, c: positions[stolenIdx].c });
+      }
+    });
+    return stolen;
+  }
+
+  function renderFull(state, highlight = [], fading = []){
+    const positions = getPositionsForState(state);
+    const hlSet = new Set(highlight.map(p => `${p.r},${p.c}`));
+    const fdSet = new Set(fading.map(p => `${p.r},${p.c}`));
+
+    for (let r = 0; r < N; r++){
+      for (let c = 0; c < N; c++){
+        const el = grid[r][c];
+        el.classList.remove('highlight', 'fading', 'multi');
+        el.style.opacity = '0';
+        el.innerHTML = '';
+      }
+    }
+
+    positions.forEach((info, key) => {
+      const [r, c] = key.split(',').map(Number);
+      const el = grid[r][c];
+      const seed = (r * N + c) % 4;
+      el.innerHTML = jarSVG(seed);
+      const badge = document.createElement('span');
+      badge.className = 'count-badge';
+      badge.textContent = info.count;
+      el.appendChild(badge);
+      if (info.count > 1) el.classList.add('multi');
+      el.style.opacity = '1';
+      if (hlSet.has(key)) el.classList.add('highlight');
+      if (fdSet.has(key)) el.classList.add('fading');
+    });
+  }
+
+  function applyPhase(phase){
+    const state = STATES[phase.stateIdx];
+
+    if (phase.type === 'state'){
+      renderFull(state);
+    }
+    else if (phase.type === 'highlight'){
+      const nextState = STATES[phase.nextIdx];
+      const stolen = getStolenBottles(state, nextState);
+      renderFull(state, stolen);
+    }
+    else if (phase.type === 'fade'){
+      const nextState = STATES[phase.nextIdx];
+      const stolen = getStolenBottles(state, nextState);
+      renderFull(state, [], stolen);
+    }
+
+    document.getElementById('stepLabel').textContent = phase.label;
+    const total = 4 * state.corner + 4 * state.edge;
+    document.getElementById('totalLabel').textContent = total + ' шт.';
+    const wallCount = 2 * state.corner + state.edge;
+    document.getElementById('tagTop').textContent    = wallCount;
+    document.getElementById('tagBottom').textContent = wallCount;
+    document.getElementById('tagLeft').textContent   = wallCount;
+    document.getElementById('tagRight').textContent  = wallCount;
+
+    const dots = document.querySelectorAll('.phase-dot');
+    const phaseIdx = PHASES.indexOf(phase);
+    dots.forEach((d, i) => {
+      d.classList.toggle('active', i === phaseIdx);
+      d.classList.toggle('done', i < phaseIdx);
+    });
+  }
+
+  function findPhase(t){
+    let best = PHASES[0];
+    let bestDist = Infinity;
+    for (const p of PHASES){
+      const d = Math.abs(p.t - t);
+      if (d < bestDist){ bestDist = d; best = p; }
+    }
+    return best;
+  }
+
+  const slider = document.getElementById('slider');
+  let lastPhaseIdx = -1;
+
+  function applyFromSlider(){
+    const t = parseFloat(slider.value) / 100;
+    const phase = findPhase(t);
+    const idx = PHASES.indexOf(phase);
+    if (idx === lastPhaseIdx) return;
+    lastPhaseIdx = idx;
+    applyPhase(phase);
+  }
+
+  slider.addEventListener('input', applyFromSlider);
+
+  const playBtn  = document.getElementById('playBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const speedInput = document.getElementById('speedInput');
+
+  let animId = null;
+  let animDuration = 10000;
+
+  function animateStep(now){
+    if (!animateStep.startTime) animateStep.startTime = now;
+    const elapsed = now - animateStep.startTime;
+    const startT = animateStep.startT;
+    const remainingDuration = animDuration * (1 - startT);
+    const t = Math.min(1, startT + elapsed / remainingDuration);
+
+    slider.value = t * 100;
+    applyFromSlider();
+
+    if (t < 1){
+      animId = requestAnimationFrame(animateStep);
+    } else {
+      animId = null;
+      animateStep.startTime = null;
+      animateStep.startT = 0;
+      playBtn.textContent = '▶ Пуск';
+    }
+  }
+
+  playBtn.addEventListener('click', () => {
+    if (animId !== null){
+      cancelAnimationFrame(animId);
+      animId = null;
+      playBtn.textContent = '▶ Продолжить';
+      return;
+    }
+    const speedSec = Math.max(2, Math.min(60, parseFloat(speedInput.value) || 10));
+    const startT = parseFloat(slider.value) / 100;
+
+    if (startT >= 0.999){
+      slider.value = 0;
+      lastPhaseIdx = -1;
+      applyFromSlider();
+      animateStep.startT = 0;
+    } else {
+      animateStep.startT = startT;
+    }
+
+    animDuration = speedSec * 1000;
+    animateStep.startTime = null;
+    playBtn.textContent = '❚❚ Пауза';
+    animId = requestAnimationFrame(animateStep);
+  });
+
+  resetBtn.addEventListener('click', () => {
+    if (animId !== null){
+      cancelAnimationFrame(animId);
+      animId = null;
+    }
+    playBtn.textContent = '▶ Пуск';
+    animateStep.startTime = null;
+    animateStep.startT = 0;
+    slider.value = 0;
+    lastPhaseIdx = -1;
+    applyFromSlider();
+  });
+
+  applyPhase(PHASES[0]);
+  lastPhaseIdx = 0;
+
+})();
+</script>
+</body>
+</html>
