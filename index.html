@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Математические визуализации</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    background: #eceef2;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+    padding: 20px;
+  }
+  .container {
+    max-width: 720px; width: 100%;
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 32px 28px;
+    box-shadow: 0 20px 40px rgba(60,65,85,0.15);
+  }
+  h1 {
+    margin: 0 0 6px 0;
+    font-size: 1.6rem;
+    color: #1a1825;
+  }
+  p.subtitle {
+    margin: 0 0 24px 0;
+    color: #8a8a9a;
+    font-size: .9rem;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .card {
+    display: block;
+    padding: 18px 16px;
+    background: #f8f9fb;
+    border-radius: 16px;
+    text-decoration: none;
+    color: #2e2a3d;
+    border: 2px solid transparent;
+    transition: transform .15s, border-color .15s, background .15s;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    border-color: #4a9e52;
+    background: #ffffff;
+  }
+  .card .emoji {
+    font-size: 1.6rem;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .card .title {
+    font-weight: 800;
+    font-size: .95rem;
+    margin-bottom: 4px;
+  }
+  .card .desc {
+    font-size: .72rem;
+    color: #8a8a9a;
+    line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📐 Математические визуализации</h1>
+  <p class="subtitle">Интерактивные анимации математических задач и головоломок</p>
+
+  <div class="grid">
+    <a class="card" href="cross/">
+      <span class="emoji">💎</span>
+      <div class="title">Крест с бриллиантами</div>
+      <div class="desc">Как мастер украл 2 бриллианта, но хозяин не заметил</div>
+    </a>
+    <a class="card" href="life/">
+      <span class="emoji">🧬</span>
+      <div class="title">Игра «Жизнь» Конвея</div>
+      <div class="desc">Клеточный автомат: планер, пульсар, ружьё Госпера</div>
+    </a>
+    <a class="card" href="rules/">
+      <span class="emoji">📜</span>
+      <div class="title">Правила игры «Жизнь»</div>
+      <div class="desc">Три правила: рождение, выживание, смерть</div>
+    </a>
+    <a class="card" href="ant/">
+      <span class="emoji">🐜</span>
+      <div class="title">Муравей Лэнгтона</div>
+      <div class="desc">Хаос превращается в дорогу на 10 000 шаге</div>
+    </a>
+    <a class="card" href="river/">
+      <span class="emoji">🚣</span>
+      <div class="title">Японская переправа</div>
+      <div class="desc">8 персонажей, плот на 2, 5 правил, 17 ходов</div>
+    </a>
+    <a class="card" href="balls/">
+      <span class="emoji">🎲</span>
+      <div class="title">Шары в коробке</div>
+      <div class="desc">Вероятность вытащить не красный шар</div>
+    </a>
+  </div>
+</div>
+</body>
+</html>
