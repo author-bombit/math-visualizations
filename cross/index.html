@@ -1,0 +1,858 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Крест с бриллиантами · задача о мастере</title>
+<style>
+  * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: #eceef2;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+    padding: 8px;
+  }
+
+  .phone-frame {
+    position: relative;
+    width: min(96vw, 96vh * 9 / 16);
+    max-width: 460px;
+    padding-top: calc(min(96vw, 96vh * 9 / 16) * 16 / 9);
+    max-height: 98vh;
+    background: linear-gradient(160deg, #ffffff 0%, #f0f1f5 60%, #e4e6ec 100%);
+    border-radius: 36px;
+    box-shadow:
+      0 0 0 1px rgba(120, 125, 140, 0.25),
+      0 24px 45px rgba(60, 65, 85, 0.18),
+      0 10px 20px rgba(60, 65, 85, 0.10);
+    overflow: hidden;
+  }
+  .phone-inner {
+    position: absolute;
+    top: 12px; left: 12px; right: 12px; bottom: 12px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .screen {
+    flex: 1;
+    border-radius: 24px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: #fdfbf3;
+    background-image:
+      linear-gradient(to right, #c8d6e8 1px, transparent 1px),
+      linear-gradient(to bottom, #c8d6e8 1px, transparent 1px);
+    background-size: 20px 20px;
+    min-height: 0;
+    box-shadow: 0 0 0 1px rgba(120, 125, 140, 0.25);
+  }
+
+  .stage-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    min-height: 0;
+    min-width: 0;
+    position: relative;
+  }
+
+  .stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .stage svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .counting-overlay {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(46, 42, 61, 0.92);
+    color: #ffe9a8;
+    font-size: 1.4rem;
+    font-weight: 900;
+    padding: 6px 14px;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.3);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .2s;
+    z-index: 10;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    min-width: 56px;
+    text-align: center;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 4px;
+  }
+  .counting-overlay.show { opacity: 1; }
+  .counting-overlay .num { font-size: 1.6rem; }
+  .counting-overlay .of { font-size: .9rem; opacity: .7; font-weight: 700; }
+
+  .controls {
+    background: linear-gradient(180deg, #ffffff, #eef0f4);
+    padding: 10px 12px 14px;
+    border-radius: 0 0 24px 24px;
+    display: flex; flex-direction: column; gap: 6px;
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
+  }
+  .row {
+    display: flex; justify-content: space-between; align-items: center;
+    color: #4a4a5a; font-size: .85rem; font-weight: 600;
+    gap: 8px;
+  }
+  .pill {
+    background: #ffffff; padding: 5px 13px; border-radius: 30px;
+    color: #2e2a3d; font-weight: 700; font-size: .72rem;
+    white-space: nowrap;
+    max-width: 78%;
+    overflow: hidden; text-overflow: ellipsis;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  .pill.count {
+    background: #e6f5e6; color: #2e6b34;
+    flex-shrink: 0;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 9px;
+    border-radius: 10px; background: #d8dae0;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #ffffff, #e8d49d);
+    border: 1px solid #b28b4f;
+    cursor: pointer;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: linear-gradient(145deg, #ffffff, #e8d49d);
+    border: 1px solid #b28b4f; cursor: pointer;
+  }
+
+  .btn-row { display: flex; align-items: center; gap: 6px; width: 100%; }
+  .btn {
+    flex: 0 0 auto;
+    background: #ffffff; color: #2e2a3d;
+    border: none; border-radius: 30px;
+    padding: 8px 10px;
+    font-size: .74rem; font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    box-shadow: 0 2px 0 #d0d2d8, 0 3px 8px rgba(0,0,0,.08);
+  }
+  .btn.play {
+    background: linear-gradient(180deg, #4aa354, #2e6b34);
+    color: #ffffff; width: 82px;
+  }
+  .btn.reset {
+    background: linear-gradient(180deg, #c98070, #a0523a);
+    color: #ffffff; width: 66px;
+  }
+  .speed-box {
+    display: flex; align-items: center; gap: 4px;
+    background: #ffffff; padding: 4px 8px;
+    border-radius: 30px; flex: 1 1 auto;
+    justify-content: center; min-width: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  .speed-box label { color: #8a8a9a; font-size: .68rem; font-weight: 700; }
+  .speed-box input[type=number] {
+    width: 34px;
+    background: #f4f5f7; color: #2e6b34;
+    border: 1px solid #d8dae0; border-radius: 8px;
+    padding: 2px 3px; font-size: .72rem; font-weight: 700;
+    text-align: center; outline: none;
+    font-family: inherit;
+  }
+  .speed-box span { color: #8a8a9a; font-size: .68rem; font-weight: 600; }
+
+  .paths-info {
+    display: flex; justify-content: space-between;
+    gap: 6px;
+  }
+  .path-item {
+    flex: 1;
+    background: #ffffff;
+    padding: 5px 4px 6px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: transform .12s, box-shadow .15s, background .15s;
+    border: 2px solid transparent;
+    position: relative;
+    font-size: .62rem;
+    font-weight: 700;
+    color: #4a4a5a;
+  }
+  .path-item:hover {
+    background: #f8f8fb;
+    box-shadow: 0 2px 6px rgba(0,0,0,.12);
+  }
+  .path-item:active {
+    transform: scale(0.97);
+  }
+  .path-item.active {
+    border-color: #d9a640;
+    background: #fff8e8;
+  }
+  .path-item.done {
+    border-color: #4a9e52;
+  }
+  .path-item .val {
+    display: block;
+    font-size: .85rem;
+    font-weight: 800;
+    color: #2e6b34;
+    margin-top: 1px;
+  }
+  .path-item.bad .val { color: #c0392b; }
+  .path-item.done .val { color: #4a9e52; }
+
+  .path-item .check {
+    position: absolute;
+    top: 3px; right: 4px;
+    font-size: .7rem;
+    color: #4a9e52;
+    opacity: 0;
+    transition: opacity .3s;
+  }
+  .path-item.done .check { opacity: 1; }
+
+  .hint {
+    color: #8a8a9a; font-size: .66rem; text-align: center;
+    line-height: 1.3;
+  }
+
+  .phase-row {
+    display: flex; justify-content: center; gap: 4px;
+  }
+  .phase-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #d0d2d8;
+  }
+  .phase-dot.active { background: #d9a640; transform: scale(1.4); }
+  .phase-dot.done   { background: #4a9e52; }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="phone-inner">
+    <div class="screen">
+      <div class="stage-wrap">
+        <div class="stage">
+          <svg id="scene" viewBox="-200 -200 400 400" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+        <div class="counting-overlay" id="countingOverlay">
+          <span class="num">1</span><span class="of">/ 6</span>
+        </div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="row">
+        <span class="pill" id="stepLabel">Начало · 10 бриллиантов</span>
+        <span class="pill count" id="totalLabel">10 шт.</span>
+      </div>
+      <input type="range" id="slider" min="0" max="100" value="0" step="0.1">
+      <div class="paths-info">
+        <div class="path-item" id="pathTop" data-path="top">
+          <span class="check">✓</span>
+          Верх→низ <span class="val">6</span>
+        </div>
+        <div class="path-item" id="pathLeft" data-path="left">
+          <span class="check">✓</span>
+          Левый→низ <span class="val">6</span>
+        </div>
+        <div class="path-item" id="pathRight" data-path="right">
+          <span class="check">✓</span>
+          Правый→низ <span class="val">6</span>
+        </div>
+      </div>
+      <div class="phase-row">
+        <div class="phase-dot active"></div>
+        <div class="phase-dot"></div>
+        <div class="phase-dot"></div>
+        <div class="phase-dot"></div>
+        <div class="phase-dot"></div>
+        <div class="phase-dot"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn play"  id="playBtn">▶ Пуск</button>
+        <button class="btn reset" id="resetBtn">↺ Сброс</button>
+        <div class="speed-box">
+          <label>⏱</label>
+          <input type="number" id="speedInput" min="2" max="60" value="10" step="1">
+          <span>с</span>
+        </div>
+      </div>
+      <div class="hint">Нажмите на плашку, чтобы посчитать бриллианты по этой линии</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const svg = document.getElementById('scene');
+  const NS = 'http://www.w3.org/2000/svg';
+
+  const START_CELLS = [
+    { col: 3, row: 0, role: 'vert', id: 'v0' },
+    { col: 3, row: 1, role: 'vert', id: 'v1' },
+    { col: 3, row: 2, role: 'vert', id: 'v2' },
+    { col: 3, row: 3, role: 'vert', id: 'v3' },
+    { col: 3, row: 4, role: 'vert', id: 'v4' },
+    { col: 3, row: 5, role: 'vert', id: 'v5' },
+    { col: 1, row: 2, role: 'steal', id: 's1' },
+    { col: 5, row: 2, role: 'steal', id: 's5' },
+    { col: 2, row: 2, role: 'move-to-2-1', id: 'm2' },
+    { col: 4, row: 2, role: 'move-to-4-1', id: 'm4' },
+  ];
+
+  const CELL = 56;
+  const GRID_CENTER_COL = 3;
+  const GRID_CENTER_ROW = 2.5;
+
+  function cellCenter(col, row){
+    return {
+      x: (col - GRID_CENTER_COL) * CELL,
+      y: (row - GRID_CENTER_ROW) * CELL,
+    };
+  }
+
+  function el(tag, attrs){
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  const defs = el('defs', {});
+
+  // ГРАДИЕНТЫ ДЛЯ БРИЛЛИАНТА
+  const gTable = el('linearGradient', { id: 'gTable', x1: '0.3', y1: '0', x2: '0.7', y2: '1' });
+  gTable.appendChild(el('stop', { offset: '0%', 'stop-color': '#ffffff' }));
+  gTable.appendChild(el('stop', { offset: '100%', 'stop-color': '#e8f6ff' }));
+  defs.appendChild(gTable);
+
+  const gCrown = el('linearGradient', { id: 'gCrown', x1: '0', y1: '0', x2: '0', y2: '1' });
+  gCrown.appendChild(el('stop', { offset: '0%', 'stop-color': '#d4f0ff' }));
+  gCrown.appendChild(el('stop', { offset: '100%', 'stop-color': '#7ec8e3' }));
+  defs.appendChild(gCrown);
+
+  const gCrownL = el('linearGradient', { id: 'gCrownL', x1: '1', y1: '0', x2: '0', y2: '0' });
+  gCrownL.appendChild(el('stop', { offset: '0%', 'stop-color': '#b8e4f5' }));
+  gCrownL.appendChild(el('stop', { offset: '100%', 'stop-color': '#5aa8c8' }));
+  defs.appendChild(gCrownL);
+
+  const gCrownR = el('linearGradient', { id: 'gCrownR', x1: '0', y1: '0', x2: '1', y2: '0' });
+  gCrownR.appendChild(el('stop', { offset: '0%', 'stop-color': '#4a9ec9' }));
+  gCrownR.appendChild(el('stop', { offset: '100%', 'stop-color': '#1a5a80' }));
+  defs.appendChild(gCrownR);
+
+  const gPav = el('linearGradient', { id: 'gPav', x1: '0', y1: '0', x2: '0', y2: '1' });
+  gPav.appendChild(el('stop', { offset: '0%', 'stop-color': '#5fb8d9' }));
+  gPav.appendChild(el('stop', { offset: '100%', 'stop-color': '#1a5a80' }));
+  defs.appendChild(gPav);
+
+  const gPavR = el('linearGradient', { id: 'gPavR', x1: '0', y1: '0', x2: '1', y2: '0' });
+  gPavR.appendChild(el('stop', { offset: '0%', 'stop-color': '#3a7fa8' }));
+  gPavR.appendChild(el('stop', { offset: '100%', 'stop-color': '#0e3a55' }));
+  defs.appendChild(gPavR);
+
+  const gPavL = el('linearGradient', { id: 'gPavL', x1: '1', y1: '0', x2: '0', y2: '0' });
+  gPavL.appendChild(el('stop', { offset: '0%', 'stop-color': '#a8e0f0' }));
+  gPavL.appendChild(el('stop', { offset: '100%', 'stop-color': '#4a9ec9' }));
+  defs.appendChild(gPavL);
+
+  const gBadge = el('radialGradient', { id: 'gBadge', cx: '0.5', cy: '0.4', r: '0.7' });
+  gBadge.appendChild(el('stop', { offset: '0%', 'stop-color': '#ffe9a8' }));
+  gBadge.appendChild(el('stop', { offset: '100%', 'stop-color': '#d9a640' }));
+  defs.appendChild(gBadge);
+
+  const gShadow = el('radialGradient', { id: 'gShadow', cx: '0.5', cy: '0.5', r: '0.5' });
+  gShadow.appendChild(el('stop', { offset: '0%', 'stop-color': '#1a3a5a', 'stop-opacity': '0.35' }));
+  gShadow.appendChild(el('stop', { offset: '100%', 'stop-color': '#1a3a5a', 'stop-opacity': '0' }));
+  defs.appendChild(gShadow);
+
+  svg.appendChild(defs);
+
+  const layerDiamonds = el('g', {});
+  const SHIFT_X = -27;
+  const SHIFT_Y = -37;
+  layerDiamonds.setAttribute('transform', `translate(${SHIFT_X}, ${SHIFT_Y})`);
+  svg.appendChild(layerDiamonds);
+
+  const layerCount = el('g', {});
+  layerCount.setAttribute('transform', `translate(${SHIFT_X}, ${SHIFT_Y})`);
+  layerCount.style.pointerEvents = 'none';
+  svg.appendChild(layerCount);
+
+  // БРИЛЛИАНТ
+  function diamondSVG(){
+    return `<svg viewBox="-25 -25 50 50" xmlns="http://www.w3.org/2000/svg" width="58" height="58" style="overflow: visible;">
+      <ellipse cx="0" cy="19" rx="14" ry="4" fill="url(#gShadow)"/>
+
+      <polygon points="-15,1 0,1 0,19"
+               fill="url(#gPavL)" stroke="#1a5a80" stroke-width="0.6"/>
+      <polygon points="0,1 15,1 0,19"
+               fill="url(#gPavR)" stroke="#1a5a80" stroke-width="0.6"/>
+
+      <polygon points="-4,14 0,19 4,14 0,12"
+               fill="#a8e0f0" opacity="0.5"/>
+
+      <polygon points="-17,-2 -10,-9 -6,-3 -10,-1"
+               fill="url(#gCrownL)" stroke="#1a5a80" stroke-width="0.6"/>
+      <polygon points="-10,-9 0,-12 0,-3 -6,-3"
+               fill="url(#gCrown)" stroke="#1a5a80" stroke-width="0.6"/>
+      <polygon points="0,-12 10,-9 6,-3 0,-3"
+               fill="url(#gCrown)" stroke="#1a5a80" stroke-width="0.6"/>
+      <polygon points="10,-9 17,-2 10,-1 6,-3"
+               fill="url(#gCrownR)" stroke="#1a5a80" stroke-width="0.6"/>
+
+      <polygon points="-10,-1 -6,-3 0,-3 6,-3 10,-1 6,1 0,1 -6,1"
+               fill="url(#gTable)" stroke="#7ec8e3" stroke-width="0.8"/>
+
+      <polygon points="-6,-3 0,-3 6,-3 4,-2 0,-1.5 -4,-2"
+               fill="#c8ecf7" opacity="0.8"/>
+
+      <polygon points="-4,-2 -1,-2.5 0,-1 -3,-0.8"
+               fill="#ffffff" opacity="0.95"/>
+      <polygon points="5,-5 7,-4 5,-3 3,-4"
+               fill="#ffffff" opacity="0.8"/>
+      <polygon points="-7,5 -6,7 -5,5 -6,4"
+               fill="#ffffff" opacity="0.55"/>
+      <line x1="0" y1="-3" x2="0" y2="1" stroke="#ffffff" stroke-width="0.5" opacity="0.7"/>
+    </svg>`;
+  }
+
+  const diamondEls = START_CELLS.map(cell => {
+    const c = cellCenter(cell.col, cell.row);
+    const g = el('g', {
+      transform: `translate(${c.x}, ${c.y})`,
+      opacity: 1,
+    });
+    g.innerHTML = diamondSVG();
+    layerDiamonds.appendChild(g);
+    return {
+      el: g,
+      id: cell.id,
+      startCol: cell.col,
+      startRow: cell.row,
+      role: cell.role,
+      svgInner: g.querySelector('svg'),
+      curCol: cell.col,
+      curRow: cell.row,
+    };
+  });
+
+  function updateDiamondLogicalPosition(d, t){
+    let col = d.startCol, row = d.startRow;
+    if (d.role === 'steal' && t >= 0.55) {
+      col = null; row = null;
+    } else if ((d.role === 'move-to-2-1' || d.role === 'move-to-4-1') && t >= 0.90) {
+      col = d.role === 'move-to-2-1' ? 2 : 4;
+      row = 1;
+    }
+    d.curCol = col;
+    d.curRow = row;
+  }
+
+  function getDiamondState(d, t){
+    const start = cellCenter(d.startCol, d.startRow);
+
+    if (d.role === 'steal'){
+      const highlight = t >= 0.20 && t < 0.45;
+      let opacity = 1;
+      if (t >= 0.45 && t < 0.55) opacity = 1 - (t - 0.45) / 0.10;
+      else if (t >= 0.55) opacity = 0;
+      return { x: start.x, y: start.y, opacity, highlight };
+    }
+    if (d.role === 'vert'){
+      return { x: start.x, y: start.y, opacity: 1, highlight: false };
+    }
+    if (d.role === 'move-to-2-1' || d.role === 'move-to-4-1'){
+      const targetCol = d.role === 'move-to-2-1' ? 2 : 4;
+      const target = cellCenter(targetCol, 1);
+      let progress = 0;
+      if (t >= 0.90) progress = 1;
+      else if (t >= 0.65) progress = (t - 0.65) / 0.25;
+      const ease = progress < 0.5
+        ? 2 * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+      return {
+        x: start.x + (target.x - start.x) * ease,
+        y: start.y + (target.y - start.y) * ease,
+        opacity: 1,
+        highlight: false,
+      };
+    }
+    return { x: start.x, y: start.y, opacity: 1, highlight: false };
+  }
+
+  function computePaths(t){
+    const top = 6;
+    const horizRow = t < 0.90 ? 2 : 1;
+    const leftSide = horizRow === 2 ? 2 : 1;
+    const rightSide = horizRow === 2 ? 2 : 1;
+    const vertBelow = 6 - horizRow;
+    return { top, left: leftSide + vertBelow, right: rightSide + vertBelow };
+  }
+
+  const slider = document.getElementById('slider');
+  const stepLabel = document.getElementById('stepLabel');
+  const totalLabel = document.getElementById('totalLabel');
+  const pathTop = document.getElementById('pathTop');
+  const pathLeft = document.getElementById('pathLeft');
+  const pathRight = document.getElementById('pathRight');
+  const countingOverlay = document.getElementById('countingOverlay');
+  const countingNum = countingOverlay.querySelector('.num');
+
+  const PHASES = [
+    { t: 0.00, label: 'Начало · 10 бриллиантов, по 6 на каждой линии' },
+    { t: 0.30, label: 'Мастер выбрал 2 крайних бриллианта' },
+    { t: 0.50, label: 'Эти 2 бриллианта исчезают…' },
+    { t: 0.60, label: 'Пауза…' },
+    { t: 0.78, label: 'Средние сдвигаются на строку выше' },
+    { t: 1.00, label: 'Готово · 8 бриллиантов, но по-прежнему по 6 на каждой линии!' },
+  ];
+
+  let currentT = 0;
+
+  function render(t){
+    currentT = t;
+    let total = 0;
+    diamondEls.forEach(d => {
+      const state = getDiamondState(d, t);
+      d.el.setAttribute('transform', `translate(${state.x}, ${state.y})`);
+      d.el.setAttribute('opacity', state.opacity);
+      if (state.opacity > 0.5) total++;
+      updateDiamondLogicalPosition(d, t);
+
+      if (d.svgInner){
+        if (state.highlight){
+          d.svgInner.style.filter = 'drop-shadow(0 0 10px #ffcc33) drop-shadow(0 0 20px #ffaa00)';
+          d.svgInner.style.animation = 'pulse 0.9s ease-in-out infinite';
+        } else {
+          d.svgInner.style.filter = '';
+          d.svgInner.style.animation = '';
+        }
+      }
+    });
+
+    const paths = computePaths(t);
+    totalLabel.textContent = total + ' шт.';
+    pathTop.querySelector('.val').textContent = paths.top;
+    pathLeft.querySelector('.val').textContent = paths.left;
+    pathRight.querySelector('.val').textContent = paths.right;
+    pathTop.classList.toggle('bad', paths.top !== 6);
+    pathLeft.classList.toggle('bad', paths.left !== 6);
+    pathRight.classList.toggle('bad', paths.right !== 6);
+
+    let bestPhase = PHASES[0], bestDist = Infinity;
+    for (const p of PHASES){
+      const d = Math.abs(p.t - t);
+      if (d < bestDist){ bestDist = d; bestPhase = p; }
+    }
+    stepLabel.textContent = bestPhase.label;
+    document.querySelectorAll('.phase-dot').forEach((d, i) => {
+      d.classList.toggle('active', i === PHASES.indexOf(bestPhase));
+      d.classList.toggle('done', i < PHASES.indexOf(bestPhase));
+    });
+  }
+
+  slider.addEventListener('input', () => render(parseFloat(slider.value) / 100));
+
+  const playBtn = document.getElementById('playBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const speedInput = document.getElementById('speedInput');
+  let animId = null, animDuration = 10000;
+
+  function animateStep(now){
+    if (!animateStep.startTime) animateStep.startTime = now;
+    const elapsed = now - animateStep.startTime;
+    const startT = animateStep.startT;
+    const t = Math.min(1, startT + elapsed / (animDuration * (1 - startT)));
+    slider.value = t * 100;
+    render(t);
+    if (t < 1) animId = requestAnimationFrame(animateStep);
+    else {
+      animId = null;
+      animateStep.startTime = null;
+      animateStep.startT = 0;
+      playBtn.textContent = '▶ Пуск';
+    }
+  }
+
+  playBtn.addEventListener('click', () => {
+    if (animId !== null){
+      cancelAnimationFrame(animId);
+      animId = null;
+      playBtn.textContent = '▶ Продолжить';
+      return;
+    }
+    const speedSec = Math.max(2, Math.min(60, parseFloat(speedInput.value) || 10));
+    const startT = parseFloat(slider.value) / 100;
+    if (startT >= 0.999){
+      slider.value = 0;
+      render(0);
+      animateStep.startT = 0;
+    } else {
+      animateStep.startT = startT;
+    }
+    animDuration = speedSec * 1000;
+    animateStep.startTime = null;
+    playBtn.textContent = '❚❚ Пауза';
+    animId = requestAnimationFrame(animateStep);
+  });
+
+  resetBtn.addEventListener('click', () => {
+    if (animId !== null){ cancelAnimationFrame(animId); animId = null; }
+    playBtn.textContent = '▶ Пуск';
+    animateStep.startTime = null;
+    animateStep.startT = 0;
+    slider.value = 0;
+    render(0);
+    [pathTop, pathLeft, pathRight].forEach(p => p.classList.remove('done', 'active'));
+    stopCounting();
+  });
+
+  function getDiamondsForPath(path){
+    const all = diamondEls.filter(d => d.curCol !== null);
+
+    if (path === 'top'){
+      return all
+        .filter(d => d.curCol === 3)
+        .sort((a, b) => a.curRow - b.curRow);
+    }
+
+    if (path === 'left'){
+      const leftSide = all
+        .filter(d => d.curCol < 3)
+        .sort((a, b) => a.curCol - b.curCol);
+      let vertFilter;
+      if (leftSide.length > 0){
+        const horizRow = leftSide[0].curRow;
+        vertFilter = d => d.curCol === 3 && d.curRow >= horizRow;
+      } else {
+        vertFilter = d => d.curCol === 3;
+      }
+      const vert = all.filter(vertFilter).sort((a, b) => a.curRow - b.curRow);
+      return [...leftSide, ...vert];
+    }
+
+    if (path === 'right'){
+      const rightSide = all
+        .filter(d => d.curCol > 3)
+        .sort((a, b) => b.curCol - a.curCol);
+      let vertFilter;
+      if (rightSide.length > 0){
+        const horizRow = rightSide[0].curRow;
+        vertFilter = d => d.curCol === 3 && d.curRow >= horizRow;
+      } else {
+        vertFilter = d => d.curCol === 3;
+      }
+      const vert = all.filter(vertFilter).sort((a, b) => a.curRow - b.curRow);
+      return [...rightSide, ...vert];
+    }
+
+    return [];
+  }
+
+  let countingAnimId = null;
+  let isCounting = false;
+
+  function stopCounting(){
+    if (countingAnimId !== null){
+      cancelAnimationFrame(countingAnimId);
+      countingAnimId = null;
+    }
+    isCounting = false;
+    countingOverlay.classList.remove('show');
+    diamondEls.forEach(d => {
+      d.el.style.filter = '';
+    });
+    [pathTop, pathLeft, pathRight].forEach(p => p.classList.remove('active'));
+    while (layerCount.firstChild) layerCount.removeChild(layerCount.firstChild);
+  }
+
+  function countPath(path){
+    if (isCounting){
+      stopCounting();
+      setTimeout(() => countPath(path), 100);
+      return;
+    }
+
+    const route = getDiamondsForPath(path);
+    if (route.length === 0) return;
+
+    isCounting = true;
+
+    const plate = path === 'top' ? pathTop : path === 'left' ? pathLeft : pathRight;
+    plate.classList.add('active');
+    plate.classList.remove('done');
+
+    let count = 0;
+    countingNum.textContent = '0';
+    countingOverlay.classList.add('show');
+
+    const beam = el('line', {
+      x1: 0, y1: 0, x2: 0, y2: 0,
+      stroke: '#d9a640',
+      'stroke-width': 4,
+      'stroke-linecap': 'round',
+      opacity: 0.7,
+    });
+    layerCount.appendChild(beam);
+
+    let startTime = null;
+    const stepDuration = 380;
+
+    const badges = route.map((d, i) => {
+      const state = getDiamondState(d, currentT);
+
+      let bx, by;
+      if (d.curCol === 3){
+        bx = state.x + 24;
+        by = state.y - 4;
+      } else if (d.curCol < 3){
+        bx = state.x - 4;
+        by = state.y - 26;
+      } else {
+        bx = state.x + 4;
+        by = state.y - 26;
+      }
+
+      const g = el('g', {
+        transform: `translate(${bx}, ${by})`,
+        opacity: 0,
+      });
+      g.appendChild(el('circle', {
+        cx: 0, cy: 0, r: 11,
+        fill: '#d9a640',
+        stroke: '#fff',
+        'stroke-width': 2,
+      }));
+      const txt = el('text', {
+        x: 0, y: 0,
+        'text-anchor': 'middle',
+        'dominant-baseline': 'central',
+        fill: '#fff',
+        'font-family': 'Segoe UI, Roboto, sans-serif',
+        'font-size': '13',
+        'font-weight': '800',
+      });
+      txt.textContent = String(i + 1);
+      g.appendChild(txt);
+
+      layerCount.appendChild(g);
+      return { g, el: d.el, num: i + 1 };
+    });
+
+    function animateCounting(now){
+      if (!startTime) startTime = now;
+      const elapsed = now - startTime;
+      const totalDuration = route.length * stepDuration;
+      const progress = Math.min(1, elapsed / totalDuration);
+
+      const idx = Math.min(route.length - 1, Math.floor(elapsed / stepDuration));
+      const currentD = route[idx];
+      const currentState = getDiamondState(currentD, currentT);
+
+      route.forEach((d, i) => {
+        if (i <= idx){
+          d.el.style.filter = 'drop-shadow(0 0 10px #ffcc33) drop-shadow(0 0 20px #ffaa00)';
+        } else {
+          d.el.style.filter = '';
+        }
+      });
+
+      badges.forEach((b, i) => {
+        b.g.setAttribute('opacity', i <= idx ? 1 : 0);
+      });
+
+      const newCount = idx + 1;
+      if (newCount !== count){
+        count = newCount;
+        countingNum.textContent = String(count);
+        playTick();
+      }
+
+      const firstState = getDiamondState(route[0], currentT);
+      beam.setAttribute('x1', firstState.x);
+      beam.setAttribute('y1', firstState.y);
+      beam.setAttribute('x2', currentState.x);
+      beam.setAttribute('y2', currentState.y);
+
+      if (progress < 1){
+        countingAnimId = requestAnimationFrame(animateCounting);
+      } else {
+        setTimeout(() => {
+          stopCounting();
+          plate.classList.add('done');
+        }, 500);
+      }
+    }
+
+    countingAnimId = requestAnimationFrame(animateCounting);
+  }
+
+  let audioCtx = null;
+  function playTick(){
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.value = 880 + Math.random() * 100;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.08);
+    } catch(e){}
+  }
+
+  [pathTop, pathLeft, pathRight].forEach(p => {
+    p.addEventListener('click', () => {
+      countPath(p.dataset.path);
+    });
+  });
+
+  render(0);
+})();
+</script>
+<style>
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.18); }
+  }
+</style>
+</body>
+</html>
