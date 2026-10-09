@@ -1,0 +1,553 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Игра «Жизнь» Конвея</title>
+<style>
+  * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: #eceef2;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+    padding: 8px;
+  }
+
+  .phone-frame {
+    position: relative;
+    width: min(96vw, 96vh * 9 / 16);
+    max-width: 460px;
+    padding-top: calc(min(96vw, 96vh * 9 / 16) * 16 / 9);
+    max-height: 98vh;
+    background: linear-gradient(160deg, #ffffff 0%, #f0f1f5 60%, #e4e6ec 100%);
+    border-radius: 36px;
+    box-shadow:
+      0 0 0 1px rgba(120, 125, 140, 0.25),
+      0 24px 45px rgba(60, 65, 85, 0.18),
+      0 10px 20px rgba(60, 65, 85, 0.10);
+    overflow: hidden;
+  }
+  .phone-inner {
+    position: absolute;
+    top: 12px; left: 12px; right: 12px; bottom: 12px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .screen {
+    flex: 1;
+    border-radius: 24px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: #fdfbf3;
+    min-height: 0;
+    box-shadow: 0 0 0 1px rgba(120, 125, 140, 0.25);
+  }
+
+  .stage-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    min-height: 0;
+    min-width: 0;
+    position: relative;
+  }
+
+  .stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .stage svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .gen-overlay {
+    position: absolute;
+    top: 6px;
+    left: 8px;
+    background: rgba(46, 42, 61, 0.85);
+    color: #b8f0b8;
+    font-size: .72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 8px;
+    box-shadow: 0 3px 8px rgba(0,0,0,.2);
+    pointer-events: none;
+    z-index: 10;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    letter-spacing: .2px;
+  }
+
+  .controls {
+    background: linear-gradient(180deg, #ffffff, #eef0f4);
+    padding: 8px 10px 10px;
+    border-radius: 0 0 24px 24px;
+    display: flex; flex-direction: column; gap: 5px;
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
+  }
+
+  .row {
+    display: flex; justify-content: space-between; align-items: center;
+    color: #4a4a5a; font-size: .78rem; font-weight: 600;
+    gap: 8px;
+  }
+  .pill {
+    background: #ffffff; padding: 4px 11px; border-radius: 30px;
+    color: #2e2a3d; font-weight: 700; font-size: .68rem;
+    white-space: nowrap;
+    max-width: 78%;
+    overflow: hidden; text-overflow: ellipsis;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  .pill.count {
+    background: #e6f5e6; color: #2e6b34;
+    flex-shrink: 0;
+  }
+
+  .presets {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+  }
+  .preset {
+    background: #ffffff;
+    border: 2px solid transparent;
+    padding: 4px 3px;
+    border-radius: 10px;
+    font-size: .6rem;
+    font-weight: 700;
+    color: #4a4a5a;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,.06);
+    transition: border-color .15s, background .15s, transform .08s;
+  }
+  .preset:hover { background: #f8f8fb; }
+  .preset:active { transform: translateY(1px); }
+  .preset.active {
+    border-color: #4a9e52;
+    background: #e6f5e6;
+    color: #2e6b34;
+  }
+
+  .btn-row { display: flex; align-items: center; gap: 5px; width: 100%; }
+  .btn {
+    flex: 0 0 auto;
+    background: #ffffff; color: #2e2a3d;
+    border: none; border-radius: 30px;
+    padding: 7px 8px;
+    font-size: .7rem; font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    box-shadow: 0 2px 0 #d0d2d8, 0 3px 8px rgba(0,0,0,.08);
+    transition: background .15s, transform .08s;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn.play {
+    background: linear-gradient(180deg, #4aa354, #2e6b34);
+    color: #ffffff; width: 72px;
+  }
+  .btn.step {
+    background: linear-gradient(180deg, #6fa8dc, #3d7eb8);
+    color: #ffffff; width: 56px;
+  }
+  .btn.reset {
+    background: linear-gradient(180deg, #c98070, #a0523a);
+    color: #ffffff; width: 58px;
+  }
+  .speed-box {
+    display: flex; align-items: center; gap: 3px;
+    background: #ffffff; padding: 3px 7px;
+    border-radius: 30px; flex: 1 1 auto;
+    justify-content: center; min-width: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  .speed-box label { color: #8a8a9a; font-size: .64rem; font-weight: 700; }
+  .speed-box input[type=number] {
+    width: 34px;
+    background: #f4f5f7; color: #2e6b34;
+    border: 1px solid #d8dae0; border-radius: 8px;
+    padding: 2px 3px; font-size: .68rem; font-weight: 700;
+    text-align: center; outline: none;
+    font-family: inherit;
+  }
+  .speed-box span { color: #8a8a9a; font-size: .64rem; font-weight: 600; }
+
+  .hint {
+    color: #8a8a9a; font-size: .62rem; text-align: center;
+    line-height: 1.2;
+  }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="phone-inner">
+    <div class="screen">
+      <div class="stage-wrap">
+        <div class="stage">
+          <svg id="scene" viewBox="-200 -200 400 400" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+        <div class="gen-overlay" id="genOverlay">Поколение 0</div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="row">
+        <span class="pill" id="stepLabel">Планер · 5 клеток</span>
+        <span class="pill count" id="totalLabel">5 живых</span>
+      </div>
+      <div class="presets" id="presets">
+        <div class="preset active" data-preset="glider">🛸 Планер</div>
+        <div class="preset" data-preset="blinker">✨ Мигалка</div>
+        <div class="preset" data-preset="toad">🐸 Жаба</div>
+        <div class="preset" data-preset="pulsar">💫 Пульсар</div>
+        <div class="preset" data-preset="eater">🪝 Пожир.</div>
+        <div class="preset" data-preset="acorn">🌰 Жёлудь</div>
+        <div class="preset" data-preset="rpentomino">🍄 R-пент.</div>
+        <div class="preset" data-preset="gosper">🔫 Ружьё</div>
+        <div class="preset" data-preset="clear">⬜ Пусто</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn play"  id="playBtn">▶ Пуск</button>
+        <button class="btn step"  id="stepBtn">Шаг</button>
+        <button class="btn reset" id="resetBtn">↺ Сброс</button>
+        <div class="speed-box">
+          <label>⏱</label>
+          <input type="number" id="speedInput" min="1" max="30" value="6" step="1">
+          <span>шаг/с</span>
+        </div>
+      </div>
+      <div class="hint" id="hint">Тапните по клетке, чтобы изменить её</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const svg = document.getElementById('scene');
+  const NS = 'http://www.w3.org/2000/svg';
+
+  // ==================================================================
+  // ПОЛЕ 20×20
+  // ==================================================================
+  const N = 20;
+  const FIELD = 400;
+  const CELL = FIELD / N;   // 20 единиц
+  const HALF = FIELD / 2;
+
+  const PRESETS = {
+    glider: { label: 'Планер', cells: [[1,0], [2,1], [0,2], [1,2], [2,2]] },
+    blinker: { label: 'Мигалка', cells: [[0,1], [1,1], [2,1]] },
+    toad: { label: 'Жаба', cells: [[1,0], [2,0], [3,0], [0,1], [1,1], [2,1]] },
+    pulsar: {
+      label: 'Пульсар',
+      cells: [
+        [2,0], [3,0], [4,0], [8,0], [9,0], [10,0],
+        [0,2], [5,2], [7,2], [12,2],
+        [0,3], [5,3], [7,3], [12,3],
+        [0,4], [5,4], [7,4], [12,4],
+        [2,5], [3,5], [4,5], [8,5], [9,5], [10,5],
+        [2,7], [3,7], [4,7], [8,7], [9,7], [10,7],
+        [0,8], [5,8], [7,8], [12,8],
+        [0,9], [5,9], [7,9], [12,9],
+        [0,10], [5,10], [7,10], [12,10],
+        [2,12], [3,12], [4,12], [8,12], [9,12], [10,12]
+      ]
+    },
+    eater: {
+      label: 'Пожиратель',
+      cells: [[0,0], [1,0], [0,1], [2,2], [3,2], [2,3], [3,4]]
+    },
+    acorn: {
+      label: 'Жёлудь',
+      cells: [[1,0], [3,1], [0,2], [1,2], [4,2], [5,2], [6,2]]
+    },
+    rpentomino: {
+      label: 'R-пентамино',
+      cells: [[1,0], [2,0], [0,1], [1,1], [1,2]]
+    },
+    gosper: {
+      label: 'Ружьё Госпера',
+      cells: [
+        [1,5], [1,6], [2,5], [2,6],
+        [11,5], [11,6], [11,7], [12,4], [12,8], [13,3], [13,9], [14,3], [14,9],
+        [15,6], [16,4], [16,8], [17,5], [17,6], [17,7], [18,6],
+        [21,3], [21,4], [21,5], [22,3], [22,4], [22,5],
+        [23,2], [23,6], [25,1], [25,2], [25,6], [25,7],
+        [35,3], [35,4], [36,3], [36,4]
+      ]
+    },
+    random: { label: 'Случайно', cells: null },
+    clear: { label: 'Пусто', cells: [] }
+  };
+
+  let grid = [];
+  let generation = 0;
+  let currentPreset = 'glider';
+
+  function emptyGrid(){
+    return Array.from({length: N}, () => Array(N).fill(0));
+  }
+
+  function fillFromCells(cells){
+    const g = emptyGrid();
+    if (!cells) {
+      for (let y = 0; y < N; y++){
+        for (let x = 0; x < N; x++){
+          if (Math.random() < 0.3) g[y][x] = 1;
+        }
+      }
+    } else if (cells.length > 0){
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      cells.forEach(([x, y]) => {
+        minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+      });
+      const w = maxX - minX + 1;
+      const h = maxY - minY + 1;
+      const offsetX = Math.floor((N - w) / 2) - minX;
+      const offsetY = Math.floor((N - h) / 2) - minY;
+      cells.forEach(([x, y]) => {
+        const cx = x + offsetX;
+        const cy = y + offsetY;
+        if (cx >= 0 && cx < N && cy >= 0 && cy < N) g[cy][cx] = 1;
+      });
+    }
+    return g;
+  }
+
+  function el(tag, attrs){
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  const layerBg = el('g', {});
+  svg.appendChild(layerBg);
+  layerBg.appendChild(el('rect', {
+    x: -HALF, y: -HALF, width: FIELD, height: FIELD,
+    fill: '#fdfbf3',
+  }));
+
+  const layerCells = el('g', {});
+  svg.appendChild(layerCells);
+
+  const layerGrid = el('g', {});
+  svg.appendChild(layerGrid);
+
+  for (let i = 0; i <= N; i++){
+    const pos = -HALF + i * CELL;
+    layerGrid.appendChild(el('line', {
+      x1: pos, y1: -HALF, x2: pos, y2: HALF,
+      stroke: '#c8d6e8', 'stroke-width': 0.8,
+    }));
+    layerGrid.appendChild(el('line', {
+      x1: -HALF, y1: pos, x2: HALF, y2: pos,
+      stroke: '#c8d6e8', 'stroke-width': 0.8,
+    }));
+  }
+
+  layerGrid.appendChild(el('rect', {
+    x: -HALF, y: -HALF, width: FIELD, height: FIELD,
+    fill: 'none', stroke: '#8aa8c8', 'stroke-width': 1.5,
+  }));
+
+  const cellEls = [];
+  for (let y = 0; y < N; y++){
+    cellEls[y] = [];
+    for (let x = 0; x < N; x++){
+      const px = -HALF + x * CELL;
+      const py = -HALF + y * CELL;
+      const rect = el('rect', {
+        x: px, y: py,
+        width: CELL, height: CELL,
+        fill: '#ffffff',
+        opacity: 0,
+        'data-x': x, 'data-y': y,
+      });
+      layerCells.appendChild(rect);
+      cellEls[y][x] = rect;
+    }
+  }
+
+  function drawGrid(prevGrid){
+    let alive = 0;
+    for (let y = 0; y < N; y++){
+      for (let x = 0; x < N; x++){
+        const el = cellEls[y][x];
+        const now = grid[y][x];
+        const prev = prevGrid ? prevGrid[y][x] : 0;
+
+        if (now) {
+          alive++;
+          el.setAttribute('fill', '#4aa354');
+          el.setAttribute('opacity', 1);
+          if (prevGrid && !prev) {
+            el.setAttribute('fill', '#8ee08e');
+          }
+        } else {
+          if (prevGrid && prev) {
+            el.setAttribute('fill', '#c8e6c8');
+            el.setAttribute('opacity', 0.5);
+          } else {
+            el.setAttribute('opacity', 0);
+          }
+        }
+      }
+    }
+    return alive;
+  }
+
+  function countNeighbors(x, y){
+    let count = 0;
+    for (let dy = -1; dy <= 1; dy++){
+      for (let dx = -1; dx <= 1; dx++){
+        if (dx === 0 && dy === 0) continue;
+        const nx = (x + dx + N) % N;
+        const ny = (y + dy + N) % N;
+        count += grid[ny][nx];
+      }
+    }
+    return count;
+  }
+
+  function step(){
+    const newGrid = emptyGrid();
+    for (let y = 0; y < N; y++){
+      for (let x = 0; x < N; x++){
+        const n = countNeighbors(x, y);
+        if (grid[y][x]) {
+          newGrid[y][x] = (n === 2 || n === 3) ? 1 : 0;
+        } else {
+          newGrid[y][x] = (n === 3) ? 1 : 0;
+        }
+      }
+    }
+    const prev = grid;
+    grid = newGrid;
+    generation++;
+    const alive = drawGrid(prev);
+    updateUI(alive);
+  }
+
+  const stepLabel = document.getElementById('stepLabel');
+  const totalLabel = document.getElementById('totalLabel');
+  const genOverlay = document.getElementById('genOverlay');
+  const hint = document.getElementById('hint');
+
+  function updateUI(alive){
+    totalLabel.textContent = alive + ' живых';
+    genOverlay.textContent = 'Поколение ' + generation;
+  }
+
+  function reset(preset){
+    if (preset) currentPreset = preset;
+    const p = PRESETS[currentPreset];
+    grid = fillFromCells(p.cells);
+    generation = 0;
+    const alive = drawGrid();
+    updateUI(alive);
+    stepLabel.textContent = p.label + ' · ' + alive + ' клеток';
+
+    document.querySelectorAll('.preset').forEach(el => {
+      el.classList.toggle('active', el.dataset.preset === currentPreset);
+    });
+    hint.textContent = currentPreset === 'clear'
+      ? 'Тапайте по клеткам, чтобы рисовать'
+      : 'Тапните по клетке, чтобы её изменить';
+  }
+
+  const playBtn = document.getElementById('playBtn');
+  const stepBtn = document.getElementById('stepBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const speedInput = document.getElementById('speedInput');
+
+  let intervalId = null;
+
+  function startPlay(){
+    if (intervalId !== null) return;
+    const stepsPerSec = Math.max(1, Math.min(30, parseInt(speedInput.value) || 6));
+    const ms = 1000 / stepsPerSec;
+    intervalId = setInterval(step, ms);
+    playBtn.textContent = '❚❚ Пауза';
+  }
+
+  function stopPlay(){
+    if (intervalId !== null){
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+    playBtn.textContent = '▶ Пуск';
+  }
+
+  playBtn.addEventListener('click', () => {
+    if (intervalId !== null) stopPlay();
+    else startPlay();
+  });
+
+  stepBtn.addEventListener('click', () => {
+    stopPlay();
+    step();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    stopPlay();
+    reset();
+  });
+
+  speedInput.addEventListener('input', () => {
+    if (intervalId !== null){
+      stopPlay();
+      startPlay();
+    }
+  });
+
+  svg.addEventListener('click', (e) => {
+    const rect = svg.getBoundingClientRect();
+    const relX = (e.clientX - rect.left) / rect.width;
+    const relY = (e.clientY - rect.top) / rect.height;
+
+    const vx = relX * 400 - 200;
+    const vy = relY * 400 - 200;
+
+    const cx = Math.floor((vx + 200) / CELL);
+    const cy = Math.floor((vy + 200) / CELL);
+
+    if (cx >= 0 && cx < N && cy >= 0 && cy < N){
+      grid[cy][cx] = grid[cy][cx] ? 0 : 1;
+      const alive = drawGrid();
+      updateUI(alive);
+      stopPlay();
+    }
+  });
+
+  document.querySelectorAll('.preset').forEach(el => {
+    el.addEventListener('click', () => {
+      stopPlay();
+      reset(el.dataset.preset);
+    });
+  });
+
+  reset('glider');
+
+})();
+</script>
+</body>
+</html>
