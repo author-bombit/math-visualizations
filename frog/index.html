@@ -1,0 +1,435 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>6 лягушек на 7 камнях</title>
+<style>
+  * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: #eceef2;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+    padding: 8px;
+  }
+
+  .phone-frame {
+    position: relative;
+    width: min(96vw, 96vh * 9 / 16);
+    max-width: 460px;
+    padding-top: calc(min(96vw, 96vh * 9 / 16) * 16 / 9);
+    max-height: 98vh;
+    background: linear-gradient(160deg, #ffffff 0%, #f0f1f5 60%, #e4e6ec 100%);
+    border-radius: 36px;
+    box-shadow:
+      0 0 0 1px rgba(120, 125, 140, 0.25),
+      0 24px 45px rgba(60, 65, 85, 0.18),
+      0 10px 20px rgba(60, 65, 85, 0.10);
+    overflow: hidden;
+  }
+  .phone-inner {
+    position: absolute;
+    top: 12px; left: 12px; right: 12px; bottom: 12px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .screen {
+    flex: 1;
+    border-radius: 24px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: #fdfbf3;
+    min-height: 0;
+    box-shadow: 0 0 0 1px rgba(120, 125, 140, 0.25);
+  }
+
+  .stage-wrap {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    position: relative;
+  }
+
+  .stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 400 / 140;
+    max-width: 100%;
+    max-height: 100%;
+    width: 100%;
+  }
+
+  .stage svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+  }
+
+  .stat-overlay {
+    position: absolute;
+    top: 6px;
+    left: 8px;
+    background: rgba(46, 42, 61, 0.85);
+    color: #b8f0b8;
+    font-size: .68rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 8px;
+    box-shadow: 0 3px 8px rgba(0,0,0,.2);
+    pointer-events: none;
+    z-index: 10;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+  }
+
+  .verdict-overlay {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    background: rgba(46, 42, 61, 0.85);
+    color: #ffd966;
+    font-size: .68rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 8px;
+    box-shadow: 0 3px 8px rgba(0,0,0,.2);
+    pointer-events: none;
+    z-index: 10;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    max-width: 62%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .verdict-overlay.error {
+    background: rgba(192, 57, 43, 0.95);
+    color: #ffffff;
+  }
+  .verdict-overlay.success {
+    background: rgba(74, 158, 82, 0.95);
+    color: #ffffff;
+  }
+
+  .rules-inline {
+    flex: 0 0 auto;
+    padding: 8px 14px 10px;
+    background: linear-gradient(180deg, #ffffff, #f5f6f8);
+    font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+    color: #3a3a4a;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .rules-line {
+    font-size: .72rem;
+    line-height: 1.4;
+    color: #3a3a4a;
+  }
+  .rules-line b { color: #1a1825; font-weight: 700; }
+
+  .controls {
+    background: linear-gradient(180deg, #ffffff, #eef0f4);
+    padding: 8px 10px 10px;
+    border-radius: 0 0 24px 24px;
+    display: flex; flex-direction: column; gap: 5px;
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
+  }
+
+  .row {
+    display: flex; justify-content: space-between; align-items: center;
+    color: #4a4a5a; font-size: .78rem; font-weight: 600;
+    gap: 8px;
+  }
+  .pill {
+    background: #ffffff; padding: 4px 11px; border-radius: 30px;
+    color: #2e2a3d; font-weight: 700; font-size: .68rem;
+    white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  .pill.count {
+    background: #e6f5e6; color: #2e6b34;
+    flex-shrink: 0;
+    font-size: .62rem;
+  }
+
+  .btn-row { display: flex; align-items: center; gap: 5px; width: 100%; }
+  .btn {
+    flex: 0 0 auto;
+    background: #ffffff; color: #2e2a3d;
+    border: none; border-radius: 30px;
+    padding: 8px 10px;
+    font-size: .7rem; font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    box-shadow: 0 2px 0 #d0d2d8, 0 3px 8px rgba(0,0,0,.08);
+    transition: background .15s, transform .08s;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn.reset {
+    background: linear-gradient(180deg, #c98070, #a0523a);
+    color: #ffffff;
+    width: 100%;
+  }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="phone-inner">
+    <div class="screen">
+
+      <div class="stage-wrap">
+        <div class="stage">
+          <svg id="scene" viewBox="-200 -70 400 140" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+        <div class="stat-overlay" id="statOverlay">Ход 0 / 15</div>
+        <div class="verdict-overlay" id="verdictOverlay">Тапните лягушку</div>
+      </div>
+
+      <div class="rules-inline">
+        <div class="rules-line">
+          <b>📜 Правила:</b> прыжок только <b>вперёд</b> — на пустой камень (1) или через одну лягушку (2).
+        </div>
+        <div class="rules-line">
+          <b>🎯 Цель:</b> поменять 🟢 и 🔴 местами за <b>15 ходов</b>.
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="row">
+          <span class="pill" id="stepLabel">🟢🟢🟢 · 🔴🔴🔴</span>
+          <span class="pill count" id="totalLabel">Ход 0</span>
+        </div>
+        <div class="btn-row">
+          <button class="btn reset" id="resetBtn">↺ Сброс</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const svg = document.getElementById('scene');
+  const NS = 'http://www.w3.org/2000/svg';
+
+  const START = ['g', 'g', 'g', null, 'r', 'r', 'r'];
+  let board = [...START];
+  let moveCount = 0;
+  let hasWon = false;
+
+  const N = 7;
+  const GAP = 56;
+  const STONE_RX = 16;
+  const STONE_RY = 10;
+  const STONE_Y = 0;
+  const FROG_SIZE = 50;
+  const FROG_Y = -48;   // ← опущено: лягушки теперь на камнях
+  const FROG_SHIFT_X = -24;
+
+  function stoneX(i){
+    return -((N - 1) * GAP) / 2 + i * GAP;
+  }
+
+  function frogX(i){
+    return stoneX(i) + FROG_SHIFT_X;
+  }
+
+  function el(tag, attrs){
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  svg.appendChild(el('rect', {
+    x: -200, y: -70, width: 400, height: 140,
+    fill: '#fdfbf3',
+  }));
+
+  for (let i = 0; i < N; i++){
+    const x = stoneX(i);
+    svg.appendChild(el('ellipse', {
+      cx: x, cy: STONE_Y + STONE_RY + 3, rx: STONE_RX, ry: 3,
+      fill: 'rgba(0,0,0,0.12)',
+    }));
+    svg.appendChild(el('ellipse', {
+      cx: x, cy: STONE_Y, rx: STONE_RX, ry: STONE_RY,
+      fill: '#b0b0c0', stroke: '#70707f', 'stroke-width': 1.8,
+    }));
+    svg.appendChild(el('ellipse', {
+      cx: x - 4, cy: STONE_Y - 3, rx: 5, ry: 1.5,
+      fill: 'white', opacity: 0.45,
+    }));
+  }
+
+  const layerFrogs = el('g', {});
+  svg.appendChild(layerFrogs);
+
+  function frogSVG(color){
+    const c = color === 'g'
+      ? { body: '#4aa354', belly: '#7ec87e', eye: '#ffffff', pupil: '#1a3d1f' }
+      : { body: '#d94a4a', belly: '#e88888', eye: '#ffffff', pupil: '#3d1a1a' };
+    const flip = color === 'r' ? 'scale(-1,1)' : '';
+    return `<svg viewBox="-22 -22 44 44" xmlns="http://www.w3.org/2000/svg" width="${FROG_SIZE}" height="${FROG_SIZE}" style="overflow: visible;">
+      <g transform="${flip}">
+        <ellipse cx="0" cy="14" rx="14" ry="3" fill="rgba(0,0,0,0.2)"/>
+        <ellipse cx="0" cy="0" rx="14" ry="12" fill="${c.body}" stroke="#2a2a3a" stroke-width="1"/>
+        <ellipse cx="0" cy="4" rx="9" ry="6" fill="${c.belly}" opacity="0.8"/>
+        <circle cx="-7" cy="-10" r="4" fill="${c.eye}" stroke="#2a2a3a" stroke-width="1"/>
+        <circle cx="7" cy="-10" r="4" fill="${c.eye}" stroke="#2a2a3a" stroke-width="1"/>
+        <circle cx="-6" cy="-10" r="2" fill="${c.pupil}"/>
+        <circle cx="8" cy="-10" r="2" fill="${c.pupil}"/>
+        <ellipse cx="-8" cy="10" rx="3" ry="2" fill="${c.body}" stroke="#2a2a3a" stroke-width="0.7"/>
+        <ellipse cx="8" cy="10" rx="3" ry="2" fill="${c.body}" stroke="#2a2a3a" stroke-width="0.7"/>
+        <ellipse cx="-13" cy="8" rx="3.5" ry="4" fill="${c.body}" stroke="#2a2a3a" stroke-width="0.7"/>
+        <ellipse cx="13" cy="8" rx="3.5" ry="4" fill="${c.body}" stroke="#2a2a3a" stroke-width="0.7"/>
+        <path d="M -5 2 Q 0 6 5 2" stroke="#2a2a3a" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+      </g>
+    </svg>`;
+  }
+
+  const frogEls = [];
+  for (let i = 0; i < N; i++){
+    const x = frogX(i);
+    const g = el('g', {
+      transform: `translate(${x}, ${FROG_Y})`,
+      opacity: 0,
+    });
+    g.dataset.idx = i;
+    layerFrogs.appendChild(g);
+    frogEls.push(g);
+  }
+
+  function drawBoard(){
+    for (let i = 0; i < N; i++){
+      const frog = board[i];
+      const g = frogEls[i];
+      if (frog === null){
+        g.setAttribute('opacity', 0);
+        g.innerHTML = '';
+      } else {
+        g.setAttribute('opacity', 1);
+        g.innerHTML = frogSVG(frog);
+      }
+    }
+  }
+
+  function canMove(i){
+    const frog = board[i];
+    if (frog === null) return null;
+    if (frog === 'g'){
+      if (i + 1 < N && board[i + 1] === null) return { from: i, to: i + 1 };
+      if (i + 2 < N && board[i + 1] !== null && board[i + 2] === null) return { from: i, to: i + 2 };
+    } else if (frog === 'r'){
+      if (i - 1 >= 0 && board[i - 1] === null) return { from: i, to: i - 1 };
+      if (i - 2 >= 0 && board[i - 1] !== null && board[i - 2] === null) return { from: i, to: i - 2 };
+    }
+    return null;
+  }
+
+  function tryMove(i){
+    if (hasWon) return;
+    const frog = board[i];
+    if (frog === null) return;
+    const move = canMove(i);
+    if (!move){
+      const reason = frog === 'g' ? 'Зелёная прыгает только вправо' : 'Красная прыгает только влево';
+      showVerdict('❌ ' + reason, 'error');
+      setTimeout(() => { if (!hasWon) showVerdict('Тапните лягушку', ''); }, 1500);
+      return;
+    }
+    board[move.from] = null;
+    board[move.to] = frog;
+    moveCount++;
+    drawBoard();
+    updateUI();
+    if (isWin()){
+      hasWon = true;
+      showVerdict('🎉 Победа! За ' + moveCount + ' ходов', 'success');
+    } else {
+      showVerdict('✓ Ход ' + moveCount, 'success');
+      setTimeout(() => { if (!hasWon) showVerdict('Тапните лягушку', ''); }, 800);
+    }
+  }
+
+  function isWin(){
+    for (let i = 0; i < 3; i++) if (board[i] !== 'r') return false;
+    if (board[3] !== null) return false;
+    for (let i = 4; i < 7; i++) if (board[i] !== 'g') return false;
+    return true;
+  }
+
+  const statOverlay = document.getElementById('statOverlay');
+  const verdictOverlay = document.getElementById('verdictOverlay');
+  const stepLabel = document.getElementById('stepLabel');
+  const totalLabel = document.getElementById('totalLabel');
+
+  function boardString(){
+    return board.map(x => x === null ? '·' : (x === 'g' ? '🟢' : '🔴')).join(' ');
+  }
+
+  function updateUI(){
+    statOverlay.textContent = 'Ход ' + moveCount + ' / 15';
+    totalLabel.textContent = 'Ход ' + moveCount;
+    stepLabel.textContent = boardString();
+  }
+
+  function showVerdict(text, kind){
+    verdictOverlay.textContent = text;
+    verdictOverlay.classList.remove('error', 'success');
+    if (kind === 'error') verdictOverlay.classList.add('error');
+    else if (kind === 'success') verdictOverlay.classList.add('success');
+  }
+
+  svg.addEventListener('click', (e) => {
+    if (hasWon) return;
+    const rect = svg.getBoundingClientRect();
+    const vx = ((e.clientX - rect.left) / rect.width) * 400 - 200;
+    const vy = ((e.clientY - rect.top) / rect.height) * 140 - 70;
+
+    let bestIdx = -1, bestDist = Infinity;
+    for (let i = 0; i < N; i++){
+      const dx = vx - frogX(i);
+      const dy = vy - FROG_Y;
+      const d = dx * dx + dy * dy;
+      if (d < bestDist){ bestDist = d; bestIdx = i; }
+    }
+    if (bestIdx === -1 || bestDist > 45 * 45) return;
+    if (board[bestIdx] === null){
+      showVerdict('Пустой камень', 'error');
+      setTimeout(() => { if (!hasWon) showVerdict('Тапните лягушку', ''); }, 900);
+      return;
+    }
+    tryMove(bestIdx);
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    board = [...START];
+    moveCount = 0;
+    hasWon = false;
+    drawBoard();
+    updateUI();
+    showVerdict('Тапните лягушку', '');
+  });
+
+  drawBoard();
+  updateUI();
+  showVerdict('Тапните лягушку', '');
+
+})();
+</script>
+</body>
+</html>
